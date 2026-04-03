@@ -4,6 +4,7 @@
  * Combines frontend and API on the same dev server
  */
 
+import 'dotenv/config.js';
 import express from 'express';
 import handler from './api/handler.js';
 
