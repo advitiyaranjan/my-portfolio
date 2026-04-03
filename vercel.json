@@ -2,21 +2,5 @@
   "version": 2,
   "buildCommand": "cd Client && npm run build",
   "outputDirectory": "Client/dist",
-  "installCommand": "npm install && cd Client && npm install && cd ../Server && npm install",
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "Server/src/server.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "Client/dist/index.html"
-    }
-  ],
-  "functions": {
-    "Server/src/server.js": {
-      "memory": 1024,
-      "maxDuration": 60
-    }
-  }
+  "installCommand": "npm install && cd Client && npm install"
 }
