@@ -1,12 +1,19 @@
 import 'dotenv/config.js';
 import { usersStorage, skillsStorage, projectsStorage, experiencesStorage, achievementsStorage, contactStorage, portFolioStorage, caseStudiesStorage } from './lib/storage.js';
 import { extractToken, verifyToken, hashPassword, comparePassword, generateToken, validateEmail } from './lib/auth.js';
+import seedData from './seed.js';
 
-// Validate JWT_SECRET on startup
-if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'your_super_secret_key_here_change_in_production') {
-  console.error('❌ ERROR: JWT_SECRET not properly configured!');
-  console.error('For local development: Add JWT_SECRET to .env file');
-  console.error('For Vercel: Run "vercel env add JWT_SECRET" and add the production secret');
+const bootstrapDataPromise = seedData().catch((error) => {
+  console.error('❌ Failed to seed initial data:', error);
+});
+
+// Validate JWT_SECRET on startup - this will throw if auth.js cannot initialize
+if (!process.env.JWT_SECRET) {
+  console.error('❌ CRITICAL: JWT_SECRET environment variable is missing!');
+  console.error('To fix:');
+  console.error('  Local: Create/.env file with: JWT_SECRET=your_secret_key');
+  console.error('  Vercel: Run: vercel env add JWT_SECRET');
+  // Don't exit - let requests fail gracefully with meaningful errors
 }
 
 // CORS helper
@@ -449,6 +456,8 @@ export async function handleCaseStudies(req, res, pathname) {
 }
 
 export default async function handler(req, res) {
+  await bootstrapDataPromise;
+
   const url = new URL(req.url, `http://${req.headers.host}`);
   const pathname = url.pathname;
 

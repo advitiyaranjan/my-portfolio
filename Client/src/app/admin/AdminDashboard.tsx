@@ -3,7 +3,8 @@ import { motion } from 'motion/react';
 import { LogOut, MessageSquare, AlertCircle, Plus, Edit2, Trash2, ExternalLink } from 'lucide-react';
 import { portfolioAPI, messagesAPI, projectAPI, experienceAPI, skillAPI, caseStudyAPI, achievementAPI } from '@/utils/api';
 
-const ADMIN_API_BASE = import.meta.env.VITE_API_URL || '';
+const ADMIN_API_BASE = import.meta.env.VITE_API_URL?.trim() || '';
+const getAdminToken = () => localStorage.getItem('portfolioToken') || localStorage.getItem('authToken') || localStorage.getItem('adminToken');
 
 interface AdminDashboardProps {
   onUpdate?: () => void;
@@ -309,7 +310,7 @@ function AboutSection({ portfolio, onUpdate }: any) {
     setIsLoadingDescription(true);
     setDescriptionMessage('');
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = getAdminToken();
       if (!token) {
         setDescriptionMessage('❌ Authentication required');
         return;
@@ -1526,7 +1527,7 @@ function StatsSection({ portfolio, onUpdate }: any) {
     setIsLoading(true);
     setMessage('');
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = getAdminToken();
       if (!token) {
         setMessage('❌ Authentication required');
         return;

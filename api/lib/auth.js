@@ -1,12 +1,20 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-// Validate JWT_SECRET is a non-empty string
-const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_key_here_change_in_production';
+// Validate JWT_SECRET is a non-empty string and ensure it's always defined
+let JWT_SECRET = process.env.JWT_SECRET;
 
 if (!JWT_SECRET || typeof JWT_SECRET !== 'string' || JWT_SECRET.trim() === '') {
+  JWT_SECRET = 'your_super_secret_key_here_change_in_production';
   console.warn('⚠️ WARNING: JWT_SECRET is not properly configured!');
-  console.warn('Set JWT_SECRET environment variable. On Vercel: vercel env add JWT_SECRET');
+  console.warn('Falling back to default (development) secret.');
+  console.warn('For local development: Add JWT_SECRET to .env file');
+  console.warn('For Vercel: Run "vercel env add JWT_SECRET" and add a production secret');
+}
+
+// Ensure JWT_SECRET is always a valid string
+if (typeof JWT_SECRET !== 'string') {
+  throw new Error('FATAL: JWT_SECRET must be a string. Check your environment configuration.');
 }
 
 // Hash password

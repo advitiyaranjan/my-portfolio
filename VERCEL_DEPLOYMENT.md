@@ -1,81 +1,24 @@
 # Vercel Deployment Guide
 
-This guide covers deploying your portfolio to Vercel (frontend) and a separate service (backend).
+This project can be deployed as a single Vercel app: the Vite frontend is built from `Client/`, and the API is served from `api/[...path].js`.
 
 ## Prerequisites
 
 - GitHub account with your portfolio repository pushed
-- Backend deployed to Render, Railway, or similar (see Backend Deployment section)
-- Vercel account (free)
+- Vercel account
+- A production `JWT_SECRET` ready to add in Vercel
 
 ## Architecture
 
 ```
-┌─────────────────┐         ┌──────────────────┐
-│  Vercel         │         │  Render/Railway  │
-│  Frontend       │◄────────│  Backend         │
-│  (React/Vite)   │         │  (Express/Node)  │
-└─────────────────┘         └──────────────────┘
+┌──────────────────────────────────────────────┐
+│ Vercel                                       │
+│  - Static frontend from Client/dist          │
+│  - Serverless API from api/[...path].js      │
+└──────────────────────────────────────────────┘
 ```
 
-## Step 1: Deploy Backend First
-
-### Option A: Deploy to Render (Recommended)
-
-1. **Push code to GitHub**
-   - Make sure your code is on GitHub
-   - Ensure `.env` is in `.gitignore`
-
-2. **Create Render Account**
-   - Go to [render.com](https://render.com)
-   - Sign up with GitHub (recommended)
-
-3. **Deploy Backend**
-   - Click "New +" → "Web Service"
-   - Select your GitHub repository
-   - Configure:
-     - **Name**: `portfolio-backend`
-     - **Environment**: `Node`
-     - **Build Command**: `npm install`
-     - **Start Command**: `npm start`
-     - **Root Directory**: `Server`
-     - **Plan**: Free
-
-   4. **Add Environment Variables**
-      - Click "Environment"
-      - Add these variables:
-        ```
-        MONGODB_URI=mongodb+srv://...
-        JWT_SECRET=your_secret_key_here
-        EMAIL_USER=your_email@gmail.com
-        EMAIL_PASSWORD=your_app_password
-        FRONTEND_URL=https://your-vercel-domain.vercel.app
-        NODE_ENV=production
-        ```
-
-   5. **Deploy**
-      - Click "Create Web Service"
-      - Wait for deployment to complete
-      - Note the URL (e.g., `https://portfolio-backend.onrender.com`)
-
-### Option B: Deploy to Railway
-
-1. Go to [railway.app](https://railway.app)
-2. Sign up with GitHub
-3. Click "New Project" → "Deploy from GitHub repo"
-4. Select your repository
-5. Add environment variables in Railway dashboard
-6. Deploy
-
-### Option C: Deploy to Cyclic
-
-1. Go to [cyclic.sh](https://cyclic.sh)
-2. Sign up with GitHub
-3. Deploy from repository
-4. Add environment variables
-5. Deploy
-
-## Step 2: Deploy Frontend to Vercel
+## Deploy To Vercel
 
 ### 1. Connect GitHub to Vercel
 
@@ -90,21 +33,16 @@ Vercel should auto-detect and use `vercel.json`:
 - **Framework**: `Vite`
 - **Build Command**: `npm --prefix Client run build`
 - **Output Directory**: `Client/dist`
-- **Install Command**: `npm install && npm install --include=dev --prefix Client`
+- **Install Command**: `npm install --legacy-peer-deps && npm install --include=dev --prefix Client`
 
 ### 3. Set Environment Variables (IMPORTANT!)
 
-**This is the critical step for your backend to work:**
+Add these in the Vercel project settings:
 
 1. Go to your project's **Settings**
 2. Click **Environment Variables**
-3. **Add new variable**:
-   - **Name**: `VITE_API_URL`
-   - **Value**: `https://your-backend-url.onrender.com/api`
-   - Replace with your actual backend URL from Step 1
-   - Click "Save"
-
-4. Apply the environment variable to **Production** (checkbox should be checked)
+3. Add `JWT_SECRET` with a strong random value
+4. Optionally add `VITE_API_URL` only if you intentionally want the frontend to call an external API instead of the same Vercel deployment
 
 ### 4. Trigger Deployment
 
@@ -122,25 +60,33 @@ Visit your Vercel domain and check:
 - No 404 or network errors in console
 - Admin dashboard can fetch data
 
+### 6. Understand Data Persistence
+
+The API stores JSON data in `/tmp` in production. On Vercel that storage is ephemeral:
+
+- Seed content is recreated automatically on cold start
+- Admin edits are not guaranteed to persist across deployments or instance recycling
+- If you need durable admin-managed content, move storage to a real database or external object store
+
 ## Troubleshooting
 
 ### 1. API calls return 404
 
-**Cause**: `VITE_API_URL` not set correctly
+**Cause**: Frontend build or route fallback is misconfigured, or the request is not going to `/api`
 
 **Solution**:
-- Check Vercel environment variables
-- Ensure `VITE_API_URL` is set to: `https://your-backend-url/api`
+- Check Vercel build logs
+- Ensure requests resolve to `/api/...` on the deployed domain
+- Only set `VITE_API_URL` if you are using an external backend
 - Redeploy frontend
 
 ### 2. CORS errors
 
-**Cause**: Backend CORS config doesn't allow Vercel domain
+**Cause**: Requests are going to a different backend domain
 
 **Solution**:
-- Update `Server/src/server.js` FRONTEND_URL environment variable
-- Set `FRONTEND_URL=https://your-vercel-app.vercel.app` in backend
-- Redeploy backend
+- Prefer same-origin `/api` on Vercel
+- If using an external API, allow your Vercel domain there and set `VITE_API_URL`
 
 ### 3. Components stuck in LOADING state
 
@@ -149,8 +95,8 @@ Visit your Vercel domain and check:
 **Solution**:
 - Open browser DevTools → Console
 - Check for error messages
-- Verify backend is running: `curl https://your-backend/api/skills`
-- Check `VITE_API_URL` environment variable is set
+- Verify API is running: `curl https://your-vercel-domain.vercel.app/api/skills`
+- Check `JWT_SECRET` is configured in Vercel
 
 ### 4. "Cannot GET /"
 
@@ -166,19 +112,13 @@ Visit your Vercel domain and check:
 ### Vercel (Frontend) Environment Variables
 
 ```
-VITE_API_URL=https://your-backend-url.onrender.com/api
-```
-
-### Backend Environment Variables (Render/Railway/etc)
-
-```
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/portfolio_db
 JWT_SECRET=your_random_secret_key_min_32_chars
-EMAIL_USER=your_email@gmail.com
-EMAIL_PASSWORD=your_gmail_app_password
-FRONTEND_URL=https://your-vercel-app.vercel.app
-NODE_ENV=production
-PORT=3000 (or whatever the service assigns)
+```
+
+### Optional External API Variable
+
+```
+VITE_API_URL=https://your-external-api.example.com/api
 ```
 
 ## Monitoring & Logs
@@ -192,13 +132,7 @@ PORT=3000 (or whatever the service assigns)
 
 ### Check Backend Logs
 
-**Render**:
-- Dashboard → Select service
-- View **Logs** tab in real-time
-
-**Railway**:
-- Dashboard → Select deployment
-- View **Logs** tab
+This project's backend runs as a Vercel serverless function, so use **Runtime Logs** in the Vercel deployment.
 
 ## Domain Management
 
@@ -219,11 +153,8 @@ PORT=3000 (or whatever the service assigns)
 ## Common Commands
 
 ```bash
-# Test backend locally pointing to Vercel frontend
-FRONTEND_URL=https://your-vercel-app.vercel.app npm run dev
-
-# Check if backend is responsive
-curl -I https://your-backend-url.onrender.com/api/skills
+# Check if the deployed API is responsive
+curl https://your-vercel-domain.vercel.app/api/skills
 
 # Verify environment variables on Vercel (view build logs)
 # Look for: "API Base URL: https://..." in browser console
@@ -238,6 +169,6 @@ Check logs:
 4. Network tab to see failed requests
 
 Common error messages:
-- `Failed to fetch`: Backend URL wrong or backend down
-- `CORS error`: Frontend URL not allowed on backend
+- `Failed to fetch`: API route failing or wrong external API URL
+- `CORS error`: Frontend is pointed at a different backend domain without CORS enabled
 - `Cannot GET /`: Build output wrong
