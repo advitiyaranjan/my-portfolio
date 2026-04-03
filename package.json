@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Full Stack Portfolio Website",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "cd Client && npm run dev",
     "start": "cd Client && npm run preview"
