@@ -1,7 +1,13 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
+// Validate JWT_SECRET is a non-empty string
 const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_key_here_change_in_production';
+
+if (!JWT_SECRET || typeof JWT_SECRET !== 'string' || JWT_SECRET.trim() === '') {
+  console.warn('⚠️ WARNING: JWT_SECRET is not properly configured!');
+  console.warn('Set JWT_SECRET environment variable. On Vercel: vercel env add JWT_SECRET');
+}
 
 // Hash password
 export const hashPassword = async (password) => {
