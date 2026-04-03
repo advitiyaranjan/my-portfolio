@@ -1,0 +1,17 @@
+{
+  "name": "portfolio",
+  "version": "1.0.0",
+  "description": "Full Stack Portfolio Website",
+  "private": true,
+  "scripts": {
+    "install-client": "cd Client && npm install",
+    "build": "cd Client && npm run build",
+    "dev": "cd Client && npm run dev",
+    "start": "cd Client && npm run preview"
+  },
+  "keywords": ["portfolio", "react", "express"],
+  "author": "Advitiya Ranjan",
+  "engines": {
+    "node": "18.x"
+  }
+}
