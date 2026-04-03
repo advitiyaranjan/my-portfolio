@@ -3,6 +3,8 @@ import { motion } from 'motion/react';
 import { LogOut, MessageSquare, AlertCircle, Plus, Edit2, Trash2, ExternalLink } from 'lucide-react';
 import { portfolioAPI, messagesAPI, projectAPI, experienceAPI, skillAPI, caseStudyAPI, achievementAPI } from '@/utils/api';
 
+const ADMIN_API_BASE = import.meta.env.VITE_API_URL || '';
+
 interface AdminDashboardProps {
   onUpdate?: () => void;
 }
@@ -313,7 +315,7 @@ function AboutSection({ portfolio, onUpdate }: any) {
         return;
       }
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/portfolio/update`, {
+      const response = await fetch(`${ADMIN_API_BASE}/api/portfolio`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -1530,7 +1532,7 @@ function StatsSection({ portfolio, onUpdate }: any) {
         return;
       }
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/portfolio/update`, {
+      const response = await fetch(`${ADMIN_API_BASE}/api/portfolio`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
