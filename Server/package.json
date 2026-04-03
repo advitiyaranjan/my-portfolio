@@ -1,0 +1,43 @@
+{
+  "name": "portfolio-backend",
+  "version": "1.0.0",
+  "description": "MERN stack backend for portfolio website",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "build": "echo 'Backend built successfully'",
+    "test": "echo 'No tests specified yet'",
+    "seed": "node src/seeds/seedCaseStudies.js",
+    "seed:case-studies": "node src/seeds/seedCaseStudies.js",
+    "seed:achievements": "node src/seeds/seedLeadershipAchievements.js",
+    "seed:experience-gradients": "node src/seeds/seedExperienceGradients.js",
+    "seed:real-experiences": "node src/seeds/seedRealExperiences.js"
+  },
+  "keywords": [
+    "mern",
+    "portfolio",
+    "backend"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.0",
+    "express": "^4.18.2",
+    "express-rate-limit": "^6.7.0",
+    "express-validator": "^7.0.0",
+    "helmet": "^7.0.0",
+    "jsonwebtoken": "^9.0.0",
+    "mongoose": "^7.0.0",
+    "morgan": "^1.10.0",
+    "multer": "^2.1.1",
+    "nodemailer": "^6.9.0",
+    "xss-clean": "^0.1.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}

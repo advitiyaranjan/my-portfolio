@@ -1,0 +1,206 @@
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import morgan from 'morgan';
+import xss from 'xss-clean';
+import { fileURLToPath } from 'url';
+import path from 'path';
+
+// Import database
+import { connectDB } from './config/db.js';
+
+// Import middleware
+import { errorHandler, notFound } from './middleware/errorHandler.js';
+import { verifyEmailConnection } from './utils/emailService.js';
+import { logger } from './utils/logger.js';
+
+// Import routes
+import authRoutes from './routes/authRoutes.js';
+import projectRoutes from './routes/projectRoutes.js';
+import contactRoutes from './routes/contactRoutes.js';
+import skillRoutes from './routes/skillRoutes.js';
+import experienceRoutes from './routes/experienceRoutes.js';
+import caseStudyRoutes from './routes/caseStudyRoutes.js';
+import resumeRoutes from './routes/resumeRoutes.js';
+import portfolioRoutes from './routes/portfolioRoutes.js';
+import leadershipRoutes from './routes/leadershipRoutes.js';
+
+// Get directory name for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Initialize Express app
+const app = express();
+
+// ============================================
+// ENVIRONMENT VARIABLES
+// ============================================
+const PORT = process.env.PORT || 5000;
+const NODE_ENV = process.env.NODE_ENV || 'development';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+
+// ============================================
+// MIDDLEWARE
+// ============================================
+
+// Security middleware
+app.use(helmet());
+app.use(xss());
+
+// CORS configuration
+app.use(
+  cors({
+    origin: FRONTEND_URL,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
+
+// Body parser middleware
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+// Logger middleware
+app.use(
+  morgan('combined', {
+    stream: {
+      write: (message) => {
+        logger.info(message.trim());
+      },
+    },
+  })
+);
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+});
+app.use('/api/', limiter);
+
+// Contact form rate limiting (stricter)
+const contactLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5, // limit each IP to 5 requests per hour
+  message: 'Too many contact form submissions from this IP, please try again later.',
+  skipSuccessfulRequests: true,
+});
+
+// ============================================
+// STATIC FILE SERVING
+// ============================================
+// Serve uploaded images
+app.use('/api/uploads/images', express.static(path.join(__dirname, 'uploads/images')));
+app.use('/uploads/images', express.static(path.join(__dirname, 'uploads/images')));
+
+// ============================================
+// API ROUTES
+// ============================================
+
+// API version prefix
+const API_PREFIX = '/api';
+
+app.use(`${API_PREFIX}/auth`, authRoutes);
+app.use(`${API_PREFIX}/portfolio`, portfolioRoutes);
+app.use(`${API_PREFIX}/projects`, projectRoutes);
+app.use(`${API_PREFIX}/contact`, contactLimiter, contactRoutes);
+app.use(`${API_PREFIX}/skills`, skillRoutes);
+app.use(`${API_PREFIX}/experience`, experienceRoutes);
+app.use(`${API_PREFIX}/case-studies`, caseStudyRoutes);
+app.use(`${API_PREFIX}/achievements`, leadershipRoutes);
+app.use(`${API_PREFIX}/resumes`, resumeRoutes);
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Server is running',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// ============================================
+// SERVE STATIC FILES (Production)
+// ============================================
+
+// In production, serve the client build
+if (NODE_ENV === 'production') {
+  const clientBuildPath = path.join(__dirname, '../../Client/dist');
+  app.use(express.static(clientBuildPath));
+
+  // Serve index.html for all non-API routes (SPA routing)
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(clientBuildPath, 'index.html'));
+  });
+}
+
+// ============================================
+// ERROR HANDLING
+// ============================================
+
+// 404 handler
+app.use(notFound);
+
+// Global error handler (must be last)
+app.use(errorHandler);
+
+// ============================================
+// DATABASE CONNECTION & SERVER START
+// ============================================
+
+const startServer = async () => {
+  // Connect to MongoDB (optional for development)
+  try {
+    await connectDB();
+    logger.info('Database connected successfully');
+  } catch (error) {
+    logger.warn('Database connection failed. Running in offline mode.', { error: error.message });
+    logger.warn('API endpoints requiring database will return mock data or errors.');
+  }
+
+  // Verify email service
+  const emailConnected = await verifyEmailConnection();
+  if (emailConnected) {
+    logger.info('Email service connected');
+  } else {
+    logger.warn('Email service is not configured properly. Contact form emails may not be sent.');
+  }
+
+  // Start server (regardless of database connection)
+  app.listen(PORT, () => {
+    logger.info(`Server started on http://localhost:${PORT}`);
+    logger.info(`Environment: ${NODE_ENV}`);
+    logger.info(`Frontend URL: ${FRONTEND_URL}`);
+  });
+};
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled Rejection at:', { reason, promise });
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught Exception:', { error: error.message });
+  process.exit(1);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  logger.info('SIGTERM signal received: closing HTTP server');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  logger.info('SIGINT signal received: closing HTTP server');
+  process.exit(0);
+});
+
+// Start the server
+startServer();
+
+export default app;
