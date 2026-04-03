@@ -1,19 +1,26 @@
 import nodemailer from 'nodemailer';
 import { logger } from './logger.js';
 
-// Create email transporter
-const transporter = nodemailer.createTransport({
-  service: process.env.EMAIL_SERVICE || 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
-  },
-});
+// Create email transporter - handle missing credentials gracefully
+let transporter = null;
+if (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
+  transporter = nodemailer.createTransport({
+    service: process.env.EMAIL_SERVICE || 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD,
+    },
+  });
+}
 
 /**
  * Send email notification for contact form submission
  */
 export const sendContactFormEmail = async (contactData) => {
+  if (!transporter) {
+    logger.warn('Email service not configured. Contact form not sent.');
+    return false;
+  }
   try {
     const { name, email, message, subject, phone } = contactData;
 
@@ -67,6 +74,10 @@ export const sendContactFormEmail = async (contactData) => {
  * Send password reset email
  */
 export const sendPasswordResetEmail = async (email, resetToken, resetUrl) => {
+  if (!transporter) {
+    logger.warn('Email service not configured. Password reset email not sent.');
+    return false;
+  }
   try {
     const mailOptions = {
       from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
@@ -95,6 +106,10 @@ export const sendPasswordResetEmail = async (email, resetToken, resetUrl) => {
  * Verify email transporter connection
  */
 export const verifyEmailConnection = async () => {
+  if (!transporter) {
+    logger.warn('Email credentials not configured. Skipping email verification.');
+    return false;
+  }
   try {
     await transporter.verify();
     logger.info('Email service connected successfully');
