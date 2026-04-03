@@ -3,11 +3,6 @@
   "buildCommand": "cd Client && npm run build",
   "outputDirectory": "Client/dist",
   "installCommand": "npm install && cd Client && npm install && cd ../Server && npm install",
-  "env": {
-    "VITE_API_URL": "@portfolio_api_url",
-    "MONGODB_URI": "@mongodb_uri",
-    "JWT_SECRET": "@jwt_secret"
-  },
   "routes": [
     {
       "src": "/api/(.*)",
