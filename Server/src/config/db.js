@@ -1,6 +1,15 @@
 import mongoose from 'mongoose';
 import { logger } from '../utils/logger.js';
 
+const globalMongoose = globalThis;
+
+if (!globalMongoose.__portfolioMongoose) {
+  globalMongoose.__portfolioMongoose = {
+    connection: null,
+    promise: null,
+  };
+}
+
 export const connectDB = async () => {
   try {
     const mongoURI = process.env.MONGODB_URI;
@@ -9,14 +18,21 @@ export const connectDB = async () => {
       throw new Error('MONGODB_URI is not defined in environment variables');
     }
 
-    const conn = await mongoose.connect(mongoURI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    if (globalMongoose.__portfolioMongoose.connection) {
+      return globalMongoose.__portfolioMongoose.connection;
+    }
+
+    if (!globalMongoose.__portfolioMongoose.promise) {
+      globalMongoose.__portfolioMongoose.promise = mongoose.connect(mongoURI);
+    }
+
+    const conn = await globalMongoose.__portfolioMongoose.promise;
+    globalMongoose.__portfolioMongoose.connection = conn;
 
     logger.info(`MongoDB Connection Successful: ${conn.connection.host}:${conn.connection.port}`);
     return conn;
   } catch (error) {
+    globalMongoose.__portfolioMongoose.promise = null;
     logger.error(`MongoDB Connection Error: ${error.message}`);
     throw error; // Let caller handle the error
   }

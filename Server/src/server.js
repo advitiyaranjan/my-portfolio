@@ -212,26 +212,26 @@ const startServer = async () => {
 };
 
 // Handle unhandled promise rejections
-process.on('unhandledRejection', (reason, promise) => {
-  logger.error('Unhandled Rejection at:', { reason, promise });
-});
+if (isDirectRun) {
+  process.on('unhandledRejection', (reason, promise) => {
+    logger.error('Unhandled Rejection at:', { reason, promise });
+  });
 
-// Handle uncaught exceptions
-process.on('uncaughtException', (error) => {
-  logger.error('Uncaught Exception:', { error: error.message });
-  process.exit(1);
-});
+  process.on('uncaughtException', (error) => {
+    logger.error('Uncaught Exception:', { error: error.message });
+    process.exit(1);
+  });
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  logger.info('SIGTERM signal received: closing HTTP server');
-  process.exit(0);
-});
+  process.on('SIGTERM', () => {
+    logger.info('SIGTERM signal received: closing HTTP server');
+    process.exit(0);
+  });
 
-process.on('SIGINT', () => {
-  logger.info('SIGINT signal received: closing HTTP server');
-  process.exit(0);
-});
+  process.on('SIGINT', () => {
+    logger.info('SIGINT signal received: closing HTTP server');
+    process.exit(0);
+  });
+}
 
 // Start the server
 if (isDirectRun) {

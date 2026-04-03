@@ -1,6 +1,18 @@
 import Portfolio from '../models/Portfolio.js';
 import { logger } from '../utils/logger.js';
 
+const normalizeProfileImage = (profileImage) => {
+  if (!profileImage) {
+    return '/images/profile.jpg';
+  }
+
+  if (profileImage.startsWith('/api/uploads/images/')) {
+    return '/images/profile.jpg';
+  }
+
+  return profileImage;
+};
+
 /**
  * Get portfolio information
  */
@@ -13,6 +25,8 @@ export const getPortfolio = async (req, res) => {
       portfolio = new Portfolio();
       await portfolio.save();
     }
+
+    portfolio.profileImage = normalizeProfileImage(portfolio.profileImage);
 
     // Increment view count
     portfolio.viewCount += 1;
@@ -94,7 +108,7 @@ export const updatePortfolio = async (req, res) => {
 
     // Update profile image if file was uploaded
     if (req.file) {
-      portfolio.profileImage = `/api/uploads/images/${req.file.filename}`;
+      portfolio.profileImage = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
     }
 
     await portfolio.save();
@@ -178,7 +192,7 @@ export const uploadProfileImage = async (req, res) => {
       portfolio = new Portfolio();
     }
 
-    portfolio.profileImage = `/api/uploads/images/${req.file.filename}`;
+    portfolio.profileImage = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
     await portfolio.save();
 
     logger.info('Profile image uploaded');
