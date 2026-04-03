@@ -16,10 +16,17 @@ const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Ensure upload directory exists
+// Ensure upload directory exists (safe for serverless)
 const uploadDir = path.join(__dirname, '../uploads/images');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+let uploadDirAvailable = false;
+try {
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+  uploadDirAvailable = true;
+} catch (err) {
+  console.warn('Upload directory not available (running on serverless?)', err.message);
+  uploadDirAvailable = false;
 }
 
 // Configure multer for image uploads
@@ -48,6 +55,16 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
 });
 
+// Middleware that skips file upload on serverless environments
+const uploadMiddleware = (req, res, next) => {
+  if (uploadDirAvailable) {
+    upload.single('profileImage')(req, res, next);
+  } else {
+    // On serverless, skip file handling but continue
+    next();
+  }
+};
+
 /**
  * @route   GET /api/portfolio
  * @desc    Get portfolio information
@@ -60,7 +77,7 @@ router.get('/', getPortfolio);
  * @desc    Update portfolio information
  * @access  Private (Admin only)
  */
-router.put('/', verifyToken, isAdmin, upload.single('profileImage'), updatePortfolio);
+router.put('/', verifyToken, isAdmin, uploadMiddleware, updatePortfolio);
 
 /**
  * @route   PUT /api/portfolio/resume
@@ -74,7 +91,7 @@ router.put('/resume', verifyToken, isAdmin, updateResumeLink);
  * @desc    Upload profile image
  * @access  Private (Admin only)
  */
-router.post('/upload-image', verifyToken, isAdmin, upload.single('profileImage'), uploadProfileImage);
+router.post('/upload-image', verifyToken, isAdmin, uploadMiddleware, uploadProfileImage);
 
 /**
  * @route   GET /api/portfolio/stats
