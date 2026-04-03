@@ -4,7 +4,6 @@
   "description": "Full Stack Portfolio Website",
   "private": true,
   "scripts": {
-    "build": "cd Client && npm run build",
     "dev": "cd Client && npm run dev",
     "start": "cd Client && npm run preview"
   },
