@@ -3,9 +3,10 @@
   "buildCommand": "cd Client && npm install && npm run build",
   "public": true,
   "outputDirectory": "Client/dist",
+  "installCommand": "npm install --legacy-peer-deps",
   "functions": {
     "api/[...path].js": {
-      "runtime": "nodejs20.x",
+      "runtime": "nodejs18.x",
       "memory": 256,
       "maxDuration": 10
     }
@@ -29,7 +30,5 @@
       "src": "/(.*)",
       "dest": "/index.html"
     }
-  ]
-}
   ]
 }
