@@ -51,6 +51,14 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 app.use(helmet());
 app.use(xss());
 
+// Disable caching for API endpoints (prevent 304 Not Modified responses)
+app.use((req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  next();
+});
+
 // CORS configuration
 app.use(
   cors({
