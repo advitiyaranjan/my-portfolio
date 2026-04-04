@@ -19,6 +19,78 @@ async function backfillMissingRecords(storage, records, uniqueKey) {
   return insertedCount;
 }
 
+function getMissingFields(existingRecord, defaultRecord) {
+  const patch = {};
+
+  for (const [key, value] of Object.entries(defaultRecord)) {
+    if (key === '_id' || key === 'createdAt' || key === 'updatedAt') {
+      continue;
+    }
+
+    const currentValue = existingRecord[key];
+    const isMissingArray = Array.isArray(value) && (!Array.isArray(currentValue) || currentValue.length === 0);
+    const isMissingObject = value && typeof value === 'object' && !Array.isArray(value) && (!currentValue || typeof currentValue !== 'object');
+    const isMissingPrimitive = currentValue === undefined || currentValue === null || currentValue === '';
+
+    if (isMissingArray || isMissingObject || isMissingPrimitive) {
+      patch[key] = value;
+    }
+  }
+
+  return patch;
+}
+
+async function repairDefaultRecords(storage, records, uniqueKey) {
+  const existingRecords = await storage.findAll();
+  const recordMap = new Map(existingRecords.map((record) => [record[uniqueKey], record]));
+
+  let updatedCount = 0;
+  for (const record of records) {
+    const existingRecord = recordMap.get(record[uniqueKey]);
+    if (!existingRecord) {
+      continue;
+    }
+
+    const patch = getMissingFields(existingRecord, record);
+    if (Object.keys(patch).length === 0) {
+      continue;
+    }
+
+    await storage.updateById(existingRecord._id, patch);
+    updatedCount += 1;
+  }
+
+  return updatedCount;
+}
+
+async function mergeMissingSkillsIntoCategories(storage, categories) {
+  const existingCategories = await storage.findAll();
+  const categoryMap = new Map(existingCategories.map((category) => [category.category, category]));
+
+  let updatedCount = 0;
+  for (const category of categories) {
+    const existingCategory = categoryMap.get(category.category);
+    if (!existingCategory) {
+      continue;
+    }
+
+    const existingSkills = Array.isArray(existingCategory.skills) ? existingCategory.skills : [];
+    const existingSkillNames = new Set(existingSkills.map((skill) => skill.name));
+    const missingSkills = category.skills.filter((skill) => !existingSkillNames.has(skill.name));
+
+    if (missingSkills.length === 0) {
+      continue;
+    }
+
+    await storage.updateById(existingCategory._id, {
+      skills: [...existingSkills, ...missingSkills],
+    });
+    updatedCount += 1;
+  }
+
+  return updatedCount;
+}
+
 async function seedData() {
   console.log('🌱 Seeding data...');
 
@@ -107,8 +179,10 @@ async function seedData() {
 
   {
     const insertedCount = await backfillMissingRecords(skillsStorage, skillCategories, 'category');
-    if (insertedCount > 0) {
-    console.log('✅ Skills data created');
+    const mergedCount = await mergeMissingSkillsIntoCategories(skillsStorage, skillCategories);
+    const repairedCount = await repairDefaultRecords(skillsStorage, skillCategories, 'category');
+    if (insertedCount > 0 || mergedCount > 0 || repairedCount > 0) {
+      console.log('✅ Skills data repaired');
     }
   }
 
@@ -184,8 +258,9 @@ async function seedData() {
 
   {
     const insertedCount = await backfillMissingRecords(projectsStorage, projects, 'title');
-    if (insertedCount > 0) {
-    console.log('✅ Projects data created');
+    const repairedCount = await repairDefaultRecords(projectsStorage, projects, 'title');
+    if (insertedCount > 0 || repairedCount > 0) {
+      console.log('✅ Projects data repaired');
     }
   }
 
@@ -219,8 +294,9 @@ async function seedData() {
 
   {
     const insertedCount = await backfillMissingRecords(experiencesStorage, experiences, 'title');
-    if (insertedCount > 0) {
-    console.log('✅ Experiences data created');
+    const repairedCount = await repairDefaultRecords(experiencesStorage, experiences, 'title');
+    if (insertedCount > 0 || repairedCount > 0) {
+      console.log('✅ Experiences data repaired');
     }
   }
 
@@ -274,8 +350,9 @@ async function seedData() {
 
   {
     const insertedCount = await backfillMissingRecords(achievementsStorage, achievements, 'title');
-    if (insertedCount > 0) {
-    console.log('✅ Achievements data created');
+    const repairedCount = await repairDefaultRecords(achievementsStorage, achievements, 'title');
+    if (insertedCount > 0 || repairedCount > 0) {
+      console.log('✅ Achievements data repaired');
     }
   }
 
@@ -318,8 +395,9 @@ async function seedData() {
 
   {
     const insertedCount = await backfillMissingRecords(caseStudiesStorage, caseStudies, 'title');
-    if (insertedCount > 0) {
-    console.log('✅ Case studies data created');
+    const repairedCount = await repairDefaultRecords(caseStudiesStorage, caseStudies, 'title');
+    if (insertedCount > 0 || repairedCount > 0) {
+      console.log('✅ Case studies data repaired');
     }
   }
 
