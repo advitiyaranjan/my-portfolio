@@ -6,10 +6,10 @@ async function seedData() {
   console.log('🌱 Seeding data...');
 
   // Create default admin user
-  const existingUser = usersStorage.findOne({ email: 'advityaranjan1@gmail.com' });
+  const existingUser = await usersStorage.findOne({ email: 'advityaranjan1@gmail.com' });
   if (!existingUser) {
     const hashedPassword = await hashPassword('admin123');
-    usersStorage.create({
+    await usersStorage.create({
       name: 'Admin User',
       email: 'advityaranjan1@gmail.com',
       password: hashedPassword,
@@ -19,8 +19,8 @@ async function seedData() {
   }
 
   // Seed portfolio info
-  if (portFolioStorage.findAll().length === 0) {
-    portFolioStorage.create({
+  if ((await portFolioStorage.findAll()).length === 0) {
+    await portFolioStorage.create({
       fullName: 'Advitiya Ranjan',
       title: 'Full Stack Developer & Blockchain Engineer',
       bio: 'Building innovative solutions with React, Node.js, and Blockchain. GATE 2026 qualified with expertise in governance technologies, real-time systems, and emerging tech.',
@@ -37,7 +37,7 @@ async function seedData() {
   }
 
   // Seed skills
-  if (skillsStorage.findAll().length === 0) {
+  if ((await skillsStorage.findAll()).length === 0) {
     const skillCategories = [
       {
         category: 'Frontend',
@@ -89,12 +89,14 @@ async function seedData() {
       }
     ];
 
-    skillCategories.forEach(cat => skillsStorage.create(cat));
+    for (const category of skillCategories) {
+      await skillsStorage.create(category);
+    }
     console.log('✅ Skills data created');
   }
 
   // Seed projects
-  if (projectsStorage.findAll().length === 0) {
+  if ((await projectsStorage.findAll()).length === 0) {
     const projects = [
       {
         title: 'Blockchain-Based Governance Research',
@@ -164,12 +166,14 @@ async function seedData() {
       }
     ];
 
-    projects.forEach(proj => projectsStorage.create(proj));
+    for (const project of projects) {
+      await projectsStorage.create(project);
+    }
     console.log('✅ Projects data created');
   }
 
   // Seed experiences
-  if (experiencesStorage.findAll().length === 0) {
+  if ((await experiencesStorage.findAll()).length === 0) {
     const experiences = [
       {
         title: 'Blockchain & Governance Research',
@@ -197,12 +201,14 @@ async function seedData() {
       }
     ];
 
-    experiences.forEach(exp => experiencesStorage.create(exp));
+    for (const experience of experiences) {
+      await experiencesStorage.create(experience);
+    }
     console.log('✅ Experiences data created');
   }
 
   // Seed achievements
-  if (achievementsStorage.findAll().length === 0) {
+  if ((await achievementsStorage.findAll()).length === 0) {
     const achievements = [
       {
         icon: 'Award',
@@ -250,12 +256,14 @@ async function seedData() {
       }
     ];
 
-    achievements.forEach(ach => achievementsStorage.create(ach));
+    for (const achievement of achievements) {
+      await achievementsStorage.create(achievement);
+    }
     console.log('✅ Achievements data created');
   }
 
   // Seed case studies
-  if (caseStudiesStorage.findAll().length === 0) {
+  if ((await caseStudiesStorage.findAll()).length === 0) {
     const caseStudies = [
       {
         title: 'Blockchain-Based Governance Research',
@@ -292,7 +300,9 @@ async function seedData() {
       }
     ];
 
-    caseStudies.forEach(cs => caseStudiesStorage.create(cs));
+    for (const caseStudy of caseStudies) {
+      await caseStudiesStorage.create(caseStudy);
+    }
     console.log('✅ Case studies data created');
   }
 
