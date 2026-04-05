@@ -947,6 +947,7 @@ function MessagesSection({ messages, onUpdate }: any) {
 function ProjectsSection({ onUpdate }: any) {
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -1002,26 +1003,47 @@ function ProjectsSection({ onUpdate }: any) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSaving(true);
     try {
       const data = {
         ...formData,
-        techStack: formData.techStack.split(',').map((t: string) => t.trim()),
+        techStack: formData.techStack
+          .split(',')
+          .map((t: string) => t.trim())
+          .filter(Boolean),
       };
 
       if (editingId) {
-        await projectAPI.updateProject(editingId, data);
+        const response = await projectAPI.updateProject(editingId, data);
+        setProjects((currentProjects) =>
+          currentProjects.map((project) =>
+            project._id === editingId ? response?.data || { ...project, ...data } : project
+          )
+        );
         alert('Project updated successfully!');
       } else {
-        await projectAPI.createProject(data);
+        const response = await projectAPI.createProject(data);
+        setProjects((currentProjects) => [response?.data || data, ...currentProjects]);
         alert('Project created successfully!');
       }
 
       setShowForm(false);
-      loadProjects();
-      if (onUpdate) onUpdate();
+      setEditingId(null);
+      setFormData({
+        title: '',
+        description: '',
+        imageUrl: '',
+        techStack: '',
+        liveLink: '',
+        githubLink: '',
+      });
+      await loadProjects();
+      if (onUpdate) await onUpdate();
     } catch (err) {
       console.error('Failed to save project:', err);
       alert('Failed to save project');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -1029,9 +1051,10 @@ function ProjectsSection({ onUpdate }: any) {
     if (window.confirm('Are you sure you want to delete this project?')) {
       try {
         await projectAPI.deleteProject(id);
+        setProjects((currentProjects) => currentProjects.filter((project) => project._id !== id));
         alert('Project deleted successfully!');
-        loadProjects();
-        if (onUpdate) onUpdate();
+        await loadProjects();
+        if (onUpdate) await onUpdate();
       } catch (err) {
         console.error('Failed to delete project:', err);
         alert('Failed to delete project');
@@ -1102,9 +1125,10 @@ function ProjectsSection({ onUpdate }: any) {
           <div className="flex gap-3">
             <button
               type="submit"
+              disabled={saving}
               className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
             >
-              {editingId ? 'Update' : 'Create'}
+              {saving ? 'Saving...' : editingId ? 'Update' : 'Create'}
             </button>
             <button
               type="button"

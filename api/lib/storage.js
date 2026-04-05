@@ -34,7 +34,7 @@ class JSONStorage {
           addRandomSuffix: false,
           allowOverwrite: true,
           contentType: 'application/json',
-          cacheControlMaxAge: 60,
+          cacheControlMaxAge: 0,
         });
       }
       return;
@@ -75,7 +75,7 @@ class JSONStorage {
           addRandomSuffix: false,
           allowOverwrite: true,
           contentType: 'application/json',
-          cacheControlMaxAge: 60,
+          cacheControlMaxAge: 0,
         });
         return true;
       }
