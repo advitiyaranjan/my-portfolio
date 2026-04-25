@@ -30,6 +30,7 @@ import leadershipRoutes from './routes/leadershipRoutes.js';
 // Get directory name for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const isDirectRun = process.argv[1] && path.resolve(process.argv[1]) === __filename;
 
 // Initialize Express app
 const app = express();
@@ -152,23 +153,37 @@ app.use(errorHandler);
 // DATABASE CONNECTION & SERVER START
 // ============================================
 
-const startServer = async () => {
-  // Connect to MongoDB (optional for development)
-  try {
-    await connectDB();
-    logger.info('Database connected successfully');
-  } catch (error) {
-    logger.warn('Database connection failed. Running in offline mode.', { error: error.message });
-    logger.warn('API endpoints requiring database will return mock data or errors.');
+let initializationPromise;
+
+export const initializeApp = async () => {
+  if (initializationPromise) {
+    return initializationPromise;
   }
 
-  // Verify email service
-  const emailConnected = await verifyEmailConnection();
-  if (emailConnected) {
-    logger.info('Email service connected');
-  } else {
-    logger.warn('Email service is not configured properly. Contact form emails may not be sent.');
-  }
+  initializationPromise = (async () => {
+    try {
+      await connectDB();
+      logger.info('Database connected successfully');
+    } catch (error) {
+      logger.warn('Database connection failed. Running in offline mode.', { error: error.message });
+      logger.warn('API endpoints requiring database will return mock data or errors.');
+    }
+
+    const emailConnected = await verifyEmailConnection();
+    if (emailConnected) {
+      logger.info('Email service connected');
+    } else {
+      logger.warn('Email service is not configured properly. Contact form emails may not be sent.');
+    }
+
+    return app;
+  })();
+
+  return initializationPromise;
+};
+
+const startServer = async () => {
+  await initializeApp();
 
   // Start server (regardless of database connection)
   app.listen(PORT, () => {
@@ -201,6 +216,8 @@ process.on('SIGINT', () => {
 });
 
 // Start the server
-startServer();
+if (isDirectRun) {
+  startServer();
+}
 
 export default app;
