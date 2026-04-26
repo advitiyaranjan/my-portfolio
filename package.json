@@ -8,6 +8,9 @@
     "dev": "cd Client && npm run dev",
     "start": "cd Client && npm run preview"
   },
+  "dependencies": {
+    "serverless-http": "^3.2.0"
+  },
   "keywords": ["portfolio", "react", "express"],
   "author": "Advitiya Ranjan",
   "engines": {
