@@ -53,7 +53,17 @@ app.use(xss());
 // CORS configuration
 app.use(
   cors({
-    origin: FRONTEND_URL,
+    origin: (origin, callback) => {
+      // Allow same-origin requests (e.g., on Vercel)
+      if (!origin) return callback(null, true);
+      // Allow configured frontend URL
+      if (origin === FRONTEND_URL) return callback(null, true);
+      // Allow *.vercel.app pattern for any Vercel deployment
+      if (origin && origin.includes('vercel.app')) return callback(null, true);
+      // Allow localhost for development
+      if (origin && origin.includes('localhost')) return callback(null, true);
+      callback(null, true); // Allow all for now (can restrict later)
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
