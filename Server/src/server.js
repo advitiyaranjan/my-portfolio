@@ -7,6 +7,7 @@ import morgan from 'morgan';
 import xss from 'xss-clean';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import fs from 'fs';
 
 // Import database
 import { connectDB } from './config/db.js';
@@ -104,9 +105,16 @@ const contactLimiter = rateLimit({
 // ============================================
 // STATIC FILE SERVING
 // ============================================
-// Serve uploaded images
-app.use('/api/uploads/images', express.static(path.join(__dirname, 'uploads/images')));
-app.use('/uploads/images', express.static(path.join(__dirname, 'uploads/images')));
+// Serve uploaded images (safe for serverless)
+try {
+  const uploadsPath = path.join(__dirname, 'uploads/images');
+  if (fs.existsSync(uploadsPath)) {
+    app.use('/api/uploads/images', express.static(uploadsPath));
+    app.use('/uploads/images', express.static(uploadsPath));
+  }
+} catch (err) {
+  logger.warn('Could not serve uploads (serverless environment)', err.message);
+}
 
 // ============================================
 // API ROUTES
