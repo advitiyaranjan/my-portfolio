@@ -12,9 +12,15 @@ const __dirname = path.dirname(__filename);
 // Get resume directory
 const resumeDir = path.join(__dirname, '../uploads/resumes');
 
-// Ensure directory exists
-if (!fs.existsSync(resumeDir)) {
-  fs.mkdirSync(resumeDir, { recursive: true });
+// Ensure directory exists when writable; skip on serverless filesystems
+let resumeDirAvailable = false;
+try {
+  if (!fs.existsSync(resumeDir)) {
+    fs.mkdirSync(resumeDir, { recursive: true });
+  }
+  resumeDirAvailable = true;
+} catch (error) {
+  logger.warn(`Resume directory unavailable: ${error.message}`);
 }
 
 // Configure multer for PDF uploads
@@ -44,6 +50,17 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max
 });
 
+const uploadResumeMiddleware = (req, res, next) => {
+  if (!resumeDirAvailable) {
+    return res.status(503).json({
+      success: false,
+      message: 'Resume uploads are unavailable in this environment',
+    });
+  }
+
+  return upload.single('resume')(req, res, next);
+};
+
 /**
  * @route   GET /api/resumes/download/:filename
  * @desc    Download resume PDF
@@ -51,6 +68,13 @@ const upload = multer({
  */
 router.get('/download/:filename', (req, res) => {
   try {
+    if (!resumeDirAvailable) {
+      return res.status(404).json({
+        success: false,
+        message: 'Resume storage is unavailable',
+      });
+    }
+
     const filename = req.params.filename;
     
     // Security: Only allow safe filenames (alphanumeric, hyphens, underscores)
@@ -96,7 +120,7 @@ router.get('/download/:filename', (req, res) => {
  * @desc    Upload a resume PDF
  * @access  Public (you can add auth later)
  */
-router.post('/upload', upload.single('resume'), (req, res) => {
+router.post('/upload', uploadResumeMiddleware, (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({
