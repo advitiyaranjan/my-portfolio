@@ -1,39 +1,9 @@
 import express from 'express';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import fs from 'fs';
 import multer from 'multer';
 import { logger } from '../utils/logger.js';
+import ResumeAsset from '../models/ResumeAsset.js';
 
 const router = express.Router();
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Get resume directory
-const resumeDir = path.join(__dirname, '../uploads/resumes');
-
-// Ensure directory exists when writable; skip on serverless filesystems
-let resumeDirAvailable = false;
-try {
-  if (!fs.existsSync(resumeDir)) {
-    fs.mkdirSync(resumeDir, { recursive: true });
-  }
-  resumeDirAvailable = true;
-} catch (error) {
-  logger.warn(`Resume directory unavailable: ${error.message}`);
-}
-
-// Configure multer for PDF uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, resumeDir);
-  },
-  filename: (req, file, cb) => {
-    // Save with custom name or original name
-    const filename = req.body.filename || 'advitiya-ranjan';
-    cb(null, `${filename}.pdf`);
-  },
-});
 
 const fileFilter = (req, file, cb) => {
   // Only accept PDF files
@@ -45,21 +15,12 @@ const fileFilter = (req, file, cb) => {
 };
 
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   fileFilter,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max
 });
 
-const uploadResumeMiddleware = (req, res, next) => {
-  if (!resumeDirAvailable) {
-    return res.status(503).json({
-      success: false,
-      message: 'Resume uploads are unavailable in this environment',
-    });
-  }
-
-  return upload.single('resume')(req, res, next);
-};
+const uploadResumeMiddleware = upload.single('resume');
 
 /**
  * @route   GET /api/resumes/download/:filename
@@ -67,14 +28,8 @@ const uploadResumeMiddleware = (req, res, next) => {
  * @access  Public
  */
 router.get('/download/:filename', (req, res) => {
-  try {
-    if (!resumeDirAvailable) {
-      return res.status(404).json({
-        success: false,
-        message: 'Resume storage is unavailable',
-      });
-    }
-
+  (async () => {
+    try {
     const filename = req.params.filename;
     
     // Security: Only allow safe filenames (alphanumeric, hyphens, underscores)
@@ -85,10 +40,9 @@ router.get('/download/:filename', (req, res) => {
       });
     }
 
-    const filepath = path.join(resumeDir, `${filename}.pdf`);
+    const resume = await ResumeAsset.findOne({ filename });
 
-    // Check if file exists
-    if (!fs.existsSync(filepath)) {
+    if (!resume) {
       logger.warn(`Resume requested but not found: ${filename}`);
       return res.status(404).json({
         success: false,
@@ -97,22 +51,21 @@ router.get('/download/:filename', (req, res) => {
     }
 
     // Set headers for PDF download
-    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Type', resume.mimeType || 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}.pdf"`);
 
-    // Stream the file
-    const stream = fs.createReadStream(filepath);
-    stream.pipe(res);
+    res.send(resume.data);
 
     logger.info(`Resume downloaded: ${filename}`);
-  } catch (error) {
-    logger.error(`Resume download error: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      message: 'Error downloading resume',
-      error: error.message,
-    });
-  }
+    } catch (error) {
+      logger.error(`Resume download error: ${error.message}`);
+      res.status(500).json({
+        success: false,
+        message: 'Error downloading resume',
+        error: error.message,
+      });
+    }
+  })();
 });
 
 /**
@@ -121,7 +74,8 @@ router.get('/download/:filename', (req, res) => {
  * @access  Public (you can add auth later)
  */
 router.post('/upload', uploadResumeMiddleware, (req, res) => {
-  try {
+  (async () => {
+    try {
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -130,6 +84,18 @@ router.post('/upload', uploadResumeMiddleware, (req, res) => {
     }
 
     const filename = req.body.filename || 'advitiya-ranjan';
+
+    await ResumeAsset.findOneAndUpdate(
+      { filename },
+      {
+        filename,
+        originalName: req.file.originalname,
+        mimeType: req.file.mimetype,
+        size: req.file.size,
+        data: req.file.buffer,
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
 
     logger.info(`Resume uploaded: ${filename}`);
 
@@ -143,14 +109,15 @@ router.post('/upload', uploadResumeMiddleware, (req, res) => {
         path: `/api/resumes/download/${filename}`,
       },
     });
-  } catch (error) {
-    logger.error(`Resume upload error: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      message: 'Error uploading resume',
-      error: error.message,
-    });
-  }
+    } catch (error) {
+      logger.error(`Resume upload error: ${error.message}`);
+      res.status(500).json({
+        success: false,
+        message: 'Error uploading resume',
+        error: error.message,
+      });
+    }
+  })();
 });
 
 /**
@@ -159,33 +126,30 @@ router.post('/upload', uploadResumeMiddleware, (req, res) => {
  * @access  Public
  */
 router.get('/list', (req, res) => {
-  try {
-    if (!fs.existsSync(resumeDir)) {
-      return res.json({
+  (async () => {
+    try {
+      const storedResumes = await ResumeAsset.find({}, { filename: 1, originalName: 1, size: 1 }).sort({ updatedAt: -1 });
+      const resumes = storedResumes.map((resume) => ({
+        name: resume.filename,
+        filename: `${resume.filename}.pdf`,
+        originalName: resume.originalName,
+        size: resume.size,
+        path: `/api/resumes/download/${resume.filename}`,
+      }));
+
+      res.json({
         success: true,
-        resumes: [],
+        resumes,
+      });
+    } catch (error) {
+      logger.error(`Resume list error: ${error.message}`);
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching resumes',
+        error: error.message,
       });
     }
-
-    const files = fs.readdirSync(resumeDir);
-    const resumes = files.filter(file => file.endsWith('.pdf')).map(file => ({
-      name: file.replace('.pdf', ''),
-      filename: file,
-      path: `/api/resumes/download/${file.replace('.pdf', '')}`,
-    }));
-
-    res.json({
-      success: true,
-      resumes,
-    });
-  } catch (error) {
-    logger.error(`Resume list error: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching resumes',
-      error: error.message,
-    });
-  }
+  })();
 });
 
 export default router;
