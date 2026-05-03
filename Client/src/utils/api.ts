@@ -1,14 +1,23 @@
 /**
  * API Base URL
  * In development: use relative path which gets proxied by Vite to http://localhost:5000
- * In production: use environment variable or absolute path
+ * In production: use VITE_API_URL environment variable (must be set in Vercel dashboard)
+ * 
+ * To deploy on Vercel:
+ * 1. Deploy backend separately (Render, Railway, etc.)
+ * 2. Add VITE_API_URL to Vercel environment variables
+ *    Example: https://your-backend.onrender.com/api
+ * 3. Redeploy frontend on Vercel
  */
 export const API_BASE_URL = 
   import.meta.env.MODE === 'development' 
     ? '/api'  // Use Vite proxy in development
-    : (import.meta.env.VITE_API_URL || '/api'); // Use env var or relative path in production
+    : (import.meta.env.VITE_API_URL?.trim() || '/api'); // Use env var or fallback to /api
 
 console.log('API Base URL:', API_BASE_URL, 'Mode:', import.meta.env.MODE);
+if (import.meta.env.MODE === 'production' && !import.meta.env.VITE_API_URL?.trim()) {
+  console.warn('⚠️ WARNING: VITE_API_URL not set! Using relative path /api. Set VITE_API_URL in Vercel environment variables if backend is on different domain.');
+}
 
 // Get token from localStorage
 const getAuthToken = () => {
@@ -46,6 +55,12 @@ const apiRequest = async (
     const response = await fetch(fullUrl, config);
 
     console.log(`API Response: ${response.status} ${response.statusText}`);
+
+    // Handle 304 Not Modified - return empty data
+    if (response.status === 304) {
+      console.warn('⚠️ 304 Not Modified received, returning empty data');
+      return { success: false, data: [] };
+    }
 
     // Don't auto-redirect on login/register endpoints - let component handle it
     if (!response.ok && response.status === 401 && !endpoint.includes('/auth/')) {

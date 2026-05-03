@@ -19,6 +19,11 @@ build/
 .env.test.local
 .env.production.local
 
+# Data directory (JSON storage for serverless)
+.data/
+data/
+/tmp/
+
 # IDE
 .vscode/
 .idea/
