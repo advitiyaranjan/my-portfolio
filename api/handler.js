@@ -2,6 +2,13 @@ import 'dotenv/config.js';
 import { usersStorage, skillsStorage, projectsStorage, experiencesStorage, achievementsStorage, contactStorage, portFolioStorage, caseStudiesStorage } from './lib/storage.js';
 import { extractToken, verifyToken, hashPassword, comparePassword, generateToken, validateEmail } from './lib/auth.js';
 
+// Validate JWT_SECRET on startup
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'your_super_secret_key_here_change_in_production') {
+  console.error('❌ ERROR: JWT_SECRET not properly configured!');
+  console.error('For local development: Add JWT_SECRET to .env file');
+  console.error('For Vercel: Run "vercel env add JWT_SECRET" and add the production secret');
+}
+
 // CORS helper
 const setCorsHeaders = (res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
