@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "npm install && npm install --include=dev --prefix Client",
+  "buildCommand": "cd Client && npm install && npm run build",
   "public": true,
   "outputDirectory": "Client/dist",
   "functions": {
@@ -12,10 +12,11 @@
   },
   "env": {
     "JWT_SECRET": {
-      "description": "Secret key for JWT tokens"
+      "description": "Secret key for JWT tokens - REQUIRED for authentication"
     },
     "NODE_ENV": {
-      "description": "Environment mode"
+      "description": "Environment mode",
+      "default": "production"
     }
   },
   "routes": [
@@ -28,5 +29,7 @@
       "src": "/(.*)",
       "dest": "/index.html"
     }
+  ]
+}
   ]
 }
