@@ -1,5 +1,6 @@
 import { usersStorage, skillsStorage, projectsStorage, experiencesStorage, achievementsStorage, portFolioStorage, caseStudiesStorage } from './lib/storage.js';
 import { hashPassword } from './lib/auth.js';
+import { fileURLToPath } from 'url';
 
 async function seedData() {
   console.log('🌱 Seeding data...');
@@ -298,10 +299,13 @@ async function seedData() {
   console.log('✨ Data seeding complete!');
 }
 
-// Execute seed function
-seedData().catch(err => {
-  console.error('❌ Seeding error:', err);
-  process.exit(1);
-});
-
 export default seedData;
+
+const isDirectExecution = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
+
+if (isDirectExecution) {
+  seedData().catch(err => {
+    console.error('❌ Seeding error:', err);
+    process.exit(1);
+  });
+}
