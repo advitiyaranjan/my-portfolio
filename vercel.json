@@ -11,15 +11,6 @@
       "maxDuration": 10
     }
   },
-  "env": {
-    "JWT_SECRET": {
-      "description": "Secret key for JWT tokens - REQUIRED for authentication"
-    },
-    "NODE_ENV": {
-      "description": "Environment mode",
-      "default": "production"
-    }
-  },
   "routes": [
     {
       "src": "/api/(.*)",
