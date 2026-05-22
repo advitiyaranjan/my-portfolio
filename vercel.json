@@ -6,7 +6,6 @@
   "installCommand": "npm install --legacy-peer-deps && npm install --include=dev --prefix Client",
   "functions": {
     "api/[...path].js": {
-      "runtime": "nodejs22.x",
       "memory": 256,
       "maxDuration": 10
     }
