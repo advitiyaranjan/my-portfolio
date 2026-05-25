@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import MainApp from './app/pages/MainApp';
 import Login from './app/pages/Login';
@@ -41,6 +41,8 @@ export default function Router() {
         
         {/* Login page */}
         <Route path="/login" element={<Login />} />
+        <Route path="/admin/login" element={<Navigate to="/login" replace />} />
+        <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
         
         {/* Protected admin dashboard */}
         <Route 
