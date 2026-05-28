@@ -393,11 +393,32 @@ export async function handleContact(req, res, pathname) {
 
   if (req.method === 'POST') {
     const { name, email, subject, message } = req.body;
-    if (!name || !email || !subject || !message) {
+    if (!name || !email || !message) {
       return res.status(400).json({ success: false, message: 'All fields required' });
     }
 
-    const contact = contactStorage.create({ name, email, subject, message, read: false });
+    const normalizedName = String(name).trim();
+    const normalizedEmail = String(email).trim();
+    const normalizedMessage = String(message).trim();
+    const normalizedSubject = typeof subject === 'string' && subject.trim()
+      ? subject.trim()
+      : `Portfolio inquiry from ${normalizedName}`;
+
+    if (!normalizedName || !normalizedEmail || !normalizedMessage) {
+      return res.status(400).json({ success: false, message: 'Name, email, and message are required' });
+    }
+
+    if (!validateEmail(normalizedEmail)) {
+      return res.status(400).json({ success: false, message: 'Invalid email address' });
+    }
+
+    const contact = contactStorage.create({
+      name: normalizedName,
+      email: normalizedEmail,
+      subject: normalizedSubject,
+      message: normalizedMessage,
+      read: false
+    });
     return res.status(201).json({ success: true, message: 'Message sent', data: contact });
   }
 
