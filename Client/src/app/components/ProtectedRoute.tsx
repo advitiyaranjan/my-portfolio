@@ -10,8 +10,7 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Check if authToken exists in localStorage
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('authToken') || localStorage.getItem('portfolioToken') || localStorage.getItem('adminToken');
     console.log('ProtectedRoute check - Token exists:', !!token);
     setIsAuthenticated(!!token);
     setMounted(true);

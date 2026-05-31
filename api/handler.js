@@ -41,6 +41,12 @@ const getIdFromUrl = (pathname, baseRoute) => {
   return parts[baseIndex + 1];
 };
 
+const getActionFromUrl = (pathname, baseRoute) => {
+  const parts = pathname.split('/');
+  const baseIndex = parts.findIndex(p => p === baseRoute.split('/')[2]);
+  return parts[baseIndex + 2] || null;
+};
+
 // Skills API
 export async function handleSkills(req, res, pathname) {
   setCorsHeaders(res);
@@ -249,10 +255,49 @@ export async function handlePortfolio(req, res, pathname) {
   const id = getIdFromUrl(pathname, '/api/portfolio');
 
   if (pathname === '/api/portfolio/stats' && req.method === 'GET') {
+    const portfolio = portFolioStorage.findAll()[0] || null;
     const projects = projectsStorage.findAll().length;
     const skills = skillsStorage.findAll().length;
     const experiences = experiencesStorage.findAll().length;
-    return res.status(200).json({ success: true, data: { projects, skills, experiences } });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        projects,
+        skills,
+        experiences,
+        viewCount: portfolio?.viewCount || 0,
+        lastUpdated: portfolio?.lastUpdated || portfolio?.updatedAt || portfolio?.createdAt || null,
+        updatedAt: portfolio?.updatedAt || null,
+      },
+    });
+  }
+
+  if (pathname === '/api/portfolio/view' && req.method === 'POST') {
+    const portfolios = portFolioStorage.findAll();
+    let portfolio = portfolios[0];
+
+    if (!portfolio) {
+      portfolio = portFolioStorage.create({
+        viewCount: 1,
+        lastUpdated: new Date().toISOString(),
+        socialLinks: {
+          github: 'https://github.com',
+          linkedin: 'https://linkedin.com',
+          twitter: 'https://twitter.com',
+        },
+      });
+    } else {
+      portfolio = portFolioStorage.updateById(portfolio._id, {
+        viewCount: Number(portfolio.viewCount || 0) + 1,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Portfolio view tracked',
+      data: { viewCount: portfolio?.viewCount || 0 },
+    });
   }
 
   if (id && id !== 'stats' && req.method === 'GET') {
@@ -268,6 +313,7 @@ export async function handlePortfolio(req, res, pathname) {
         success: true,
         data: {
           _id: 'default',
+          viewCount: 0,
           socialLinks: {
             github: 'https://github.com',
             linkedin: 'https://linkedin.com',
@@ -285,10 +331,18 @@ export async function handlePortfolio(req, res, pathname) {
 
     const portfolios = portFolioStorage.findAll();
     let portfolio = portfolios[0];
+    const lastUpdated = new Date().toISOString();
     if (!portfolio) {
-      portfolio = portFolioStorage.create(req.body);
+      portfolio = portFolioStorage.create({
+        ...req.body,
+        viewCount: Number(req.body?.viewCount || 0),
+        lastUpdated,
+      });
     } else {
-      portfolio = portFolioStorage.updateById(portfolio._id, req.body);
+      portfolio = portFolioStorage.updateById(portfolio._id, {
+        ...req.body,
+        lastUpdated,
+      });
     }
     return res.status(200).json({ success: true, message: 'Portfolio updated', data: portfolio });
   }
@@ -368,11 +422,62 @@ export async function handleAuth(req, res, path) {
 export async function handleContact(req, res, pathname) {
   setCorsHeaders(res);
   const id = getIdFromUrl(pathname, '/api/contact');
+  const action = getActionFromUrl(pathname, '/api/contact');
+
+  if (pathname === '/api/contact/stats' && req.method === 'GET') {
+    const messages = contactStorage.findAll();
+    const unreadCount = messages.filter((message) => !(message.isRead ?? message.read)).length;
+    const repliedCount = messages.filter((message) => Boolean(message.repliedAt)).length;
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        total: messages.length,
+        unreadCount,
+        repliedCount,
+      },
+    });
+  }
 
   if (id && req.method === 'GET') {
     const contact = contactStorage.findById(id);
     if (!contact) return res.status(404).json({ success: false, message: 'Contact not found' });
     return res.status(200).json({ success: true, data: contact });
+  }
+
+  if (id && action === 'read' && req.method === 'PUT') {
+    const user = requireAuth(req);
+    if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+    const updated = contactStorage.updateById(id, {
+      read: true,
+      isRead: true,
+      readAt: new Date().toISOString(),
+    });
+
+    if (!updated) return res.status(404).json({ success: false, message: 'Contact not found' });
+    return res.status(200).json({ success: true, message: 'Message marked as read', data: updated });
+  }
+
+  if (id && action === 'replied' && req.method === 'PUT') {
+    const user = requireAuth(req);
+    if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+    const updated = contactStorage.updateById(id, {
+      repliedAt: new Date().toISOString(),
+    });
+
+    if (!updated) return res.status(404).json({ success: false, message: 'Contact not found' });
+    return res.status(200).json({ success: true, message: 'Message marked as replied', data: updated });
+  }
+
+  if (id && req.method === 'DELETE') {
+    const user = requireAuth(req);
+    if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+    const deleted = contactStorage.deleteById(id);
+    if (!deleted) return res.status(404).json({ success: false, message: 'Contact not found' });
+    return res.status(200).json({ success: true, message: 'Message deleted' });
   }
 
   if (req.method === 'GET') {
@@ -417,7 +522,8 @@ export async function handleContact(req, res, pathname) {
       email: normalizedEmail,
       subject: normalizedSubject,
       message: normalizedMessage,
-      read: false
+      read: false,
+      isRead: false
     });
     return res.status(201).json({ success: true, message: 'Message sent', data: contact });
   }

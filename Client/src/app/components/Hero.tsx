@@ -4,13 +4,29 @@ import { useEffect, useState } from 'react';
 import { portfolioAPI } from '@/utils/api';
 import { AnimatedBackground } from './AnimatedBackground';
 
+const PORTFOLIO_VIEW_SESSION_KEY = 'portfolioViewTracked';
+
 export function Hero() {
   const [portfolio, setPortfolio] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadPortfolio();
+    trackPortfolioView();
   }, []);
+
+  const trackPortfolioView = async () => {
+    if (sessionStorage.getItem(PORTFOLIO_VIEW_SESSION_KEY)) {
+      return;
+    }
+
+    try {
+      await portfolioAPI.incrementView();
+      sessionStorage.setItem(PORTFOLIO_VIEW_SESSION_KEY, 'true');
+    } catch (error) {
+      console.error('Failed to track portfolio view:', error);
+    }
+  };
 
   const loadPortfolio = async () => {
     try {

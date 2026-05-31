@@ -21,7 +21,7 @@ if (import.meta.env.MODE === 'production' && !import.meta.env.VITE_API_URL?.trim
 
 // Get token from localStorage
 const getAuthToken = () => {
-  return localStorage.getItem('portfolioToken');
+  return localStorage.getItem('portfolioToken') || localStorage.getItem('authToken') || localStorage.getItem('adminToken');
 };
 
 // API Request wrapper
@@ -357,9 +357,12 @@ export const portfolioAPI = {
   getPortfolio: () =>
     apiRequest('/portfolio', 'GET'),
 
+  incrementView: () =>
+    apiRequest('/portfolio/view', 'POST', {}),
+
   updatePortfolio: (portfolioData: FormData | {[key: string]: unknown}, isFormData: boolean = false) => {
     const headers: HeadersInit = {};
-    const token = localStorage.getItem('portfolioToken');
+    const token = getAuthToken();
     if (token) {
       headers.Authorization = `Bearer ${token}`;
     }
@@ -388,7 +391,7 @@ export const portfolioAPI = {
     formData.append('profileImage', file);
 
     const headers: HeadersInit = {};
-    const token = localStorage.getItem('portfolioToken');
+    const token = getAuthToken();
     if (token) {
       headers.Authorization = `Bearer ${token}`;
     }

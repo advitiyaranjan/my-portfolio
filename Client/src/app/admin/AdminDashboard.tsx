@@ -6,6 +6,33 @@ import { portfolioAPI, messagesAPI, projectAPI, experienceAPI, skillAPI, caseStu
 const ADMIN_API_BASE = import.meta.env.VITE_API_URL?.trim() || '';
 const getAdminToken = () => localStorage.getItem('portfolioToken') || localStorage.getItem('authToken') || localStorage.getItem('adminToken');
 
+const DEFAULT_ABOUT_HIGHLIGHTS = [
+  {
+    id: 1,
+    title: 'Full Stack Developer',
+    description: 'Expert in React, Node.js, Next.js, and MongoDB for building scalable applications',
+    icon: 'Code',
+  },
+  {
+    id: 2,
+    title: 'Blockchain & Web3',
+    description: 'Proficient in Solidity smart contracts, Web3.js, and decentralized solutions',
+    icon: 'Lightbulb',
+  },
+  {
+    id: 3,
+    title: 'AI & Machine Learning',
+    description: 'Applied experience with TensorFlow, scikit-learn, and OpenAI APIs',
+    icon: 'Users',
+  },
+  {
+    id: 4,
+    title: 'Innovative Problem Solver',
+    description: 'Building cutting-edge solutions for governance, finance, and verification systems',
+    icon: 'Target',
+  },
+];
+
 interface AdminDashboardProps {
   onUpdate?: () => void;
 }
@@ -17,6 +44,11 @@ export default function AdminDashboard({ onUpdate }: AdminDashboardProps) {
   const [portfolio, setPortfolio] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  const handleContentUpdate = async () => {
+    await loadOverviewData();
+    onUpdate?.();
+  };
 
   // Load data when activeTab changes
   useEffect(() => {
@@ -43,7 +75,7 @@ export default function AdminDashboard({ onUpdate }: AdminDashboardProps) {
       // Try to load stats
       try {
         const result = await portfolioAPI.getStats();
-        setStats(result?.stats || result);
+        setStats(result?.data || result?.stats || result);
       } catch (err) {
         console.warn('Failed to load stats:', err);
       }
@@ -78,6 +110,7 @@ export default function AdminDashboard({ onUpdate }: AdminDashboardProps) {
   const handleLogout = () => {
     localStorage.removeItem('portfolioToken');
     localStorage.removeItem('authToken');
+    localStorage.removeItem('adminToken');
     window.location.href = '/login';
   };
 
@@ -147,14 +180,14 @@ export default function AdminDashboard({ onUpdate }: AdminDashboardProps) {
         )}
 
         {activeTab === 'overview' && <OverviewSection portfolio={portfolio} stats={stats} messages={messages} />}
-        {activeTab === 'profile' && <ProfileSection portfolio={portfolio} onUpdate={() => {} } />}
-        {activeTab === 'about' && <AboutSection portfolio={portfolio} onUpdate={() => {}} />}
-        {activeTab === 'stats' && <StatsSection portfolio={portfolio} onUpdate={() => {}} />}
-        {activeTab === 'projects' && <ProjectsSection onUpdate={() => {}} />}
-        {activeTab === 'achievements' && <AchievementsSection onUpdate={() => {}} />}
-        {activeTab === 'experience' && <ExperienceSection onUpdate={() => {}} />}
-        {activeTab === 'skills' && <SkillsSection onUpdate={() => {}} />}
-        {activeTab === 'messages' && <MessagesSection messages={messages} onUpdate={() => {}} />}
+        {activeTab === 'profile' && <ProfileSection portfolio={portfolio} onUpdate={handleContentUpdate} />}
+        {activeTab === 'about' && <AboutSection portfolio={portfolio} onUpdate={handleContentUpdate} />}
+        {activeTab === 'stats' && <StatsSection portfolio={portfolio} onUpdate={handleContentUpdate} />}
+        {activeTab === 'projects' && <ProjectsSection onUpdate={handleContentUpdate} />}
+        {activeTab === 'achievements' && <AchievementsSection onUpdate={handleContentUpdate} />}
+        {activeTab === 'experience' && <ExperienceSection onUpdate={handleContentUpdate} />}
+        {activeTab === 'skills' && <SkillsSection onUpdate={handleContentUpdate} />}
+        {activeTab === 'messages' && <MessagesSection messages={messages} onUpdate={handleContentUpdate} />}
       </div>
     </div>
   );
@@ -270,32 +303,7 @@ function AboutSection({ portfolio, onUpdate }: any) {
   );
   const [isLoadingDescription, setIsLoadingDescription] = useState(false);
   const [descriptionMessage, setDescriptionMessage] = useState('');
-  const [aboutData, setAboutData] = useState<any[]>([
-    {
-      id: 1,
-      title: 'Full Stack Developer',
-      description: 'Expert in React, Node.js, Next.js, and MongoDB for building scalable applications',
-      icon: 'Code',
-    },
-    {
-      id: 2,
-      title: 'Blockchain & Web3',
-      description: 'Proficient in Solidity smart contracts, Web3.js, and decentralized solutions',
-      icon: 'Link',
-    },
-    {
-      id: 3,
-      title: 'AI & Machine Learning',
-      description: 'Applied experience with TensorFlow, scikit-learn, and OpenAI APIs',
-      icon: 'Lightbulb',
-    },
-    {
-      id: 4,
-      title: 'Innovative Problem Solver',
-      description: 'Building cutting-edge solutions for governance, finance, and verification systems',
-      icon: 'Target',
-    },
-  ]);
+  const [aboutData, setAboutData] = useState<any[]>(portfolio?.aboutHighlights || DEFAULT_ABOUT_HIGHLIGHTS);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [formData, setFormData] = useState({ title: '', description: '', icon: '' });
@@ -304,7 +312,20 @@ function AboutSection({ portfolio, onUpdate }: any) {
     if (portfolio?.aboutDescription) {
       setAboutDescription(portfolio.aboutDescription);
     }
+    if (Array.isArray(portfolio?.aboutHighlights) && portfolio.aboutHighlights.length > 0) {
+      setAboutData(portfolio.aboutHighlights);
+      return;
+    }
+    setAboutData(DEFAULT_ABOUT_HIGHLIGHTS);
   }, [portfolio]);
+
+  const persistAboutHighlights = async (nextHighlights: any[]) => {
+    await portfolioAPI.updatePortfolio({ aboutHighlights: nextHighlights });
+    setAboutData(nextHighlights);
+    if (onUpdate) {
+      await onUpdate();
+    }
+  };
 
   const handleSaveDescription = async () => {
     setIsLoadingDescription(true);
@@ -330,6 +351,9 @@ function AboutSection({ portfolio, onUpdate }: any) {
       }
 
       setDescriptionMessage('✅ About description updated successfully!');
+      if (onUpdate) {
+        await onUpdate();
+      }
       setTimeout(() => setDescriptionMessage(''), 3000);
     } catch (error: any) {
       setDescriptionMessage(`❌ Error: ${error.message}`);
@@ -350,21 +374,31 @@ function AboutSection({ portfolio, onUpdate }: any) {
     setShowForm(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingId) {
-      setAboutData(aboutData.map(item => item.id === editingId ? { ...item, ...formData } : item));
-    } else {
-      setAboutData([...aboutData, { id: Date.now(), ...formData }]);
+    const nextHighlights = editingId
+      ? aboutData.map(item => item.id === editingId ? { ...item, ...formData } : item)
+      : [...aboutData, { id: Date.now(), ...formData }];
+
+    try {
+      await persistAboutHighlights(nextHighlights);
+      setShowForm(false);
+      setEditingId(null);
+      setFormData({ title: '', description: '', icon: '' });
+    } catch (error) {
+      console.error('Failed to save about highlight:', error);
+      alert('Failed to save highlight');
     }
-    setShowForm(false);
-    if (onUpdate) onUpdate();
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = async (id: number) => {
     if (window.confirm('Are you sure you want to delete this highlight?')) {
-      setAboutData(aboutData.filter(item => item.id !== id));
-      if (onUpdate) onUpdate();
+      try {
+        await persistAboutHighlights(aboutData.filter(item => item.id !== id));
+      } catch (error) {
+        console.error('Failed to delete about highlight:', error);
+        alert('Failed to delete highlight');
+      }
     }
   };
 
@@ -778,12 +812,50 @@ function ProfileSection({ portfolio, onUpdate }: any) {
 
 // Messages Section
 function MessagesSection({ messages, onUpdate }: any) {
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+
   const getFormattedDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
       return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleString();
     } catch {
       return 'Invalid date';
+    }
+  };
+
+  const isMessageRead = (message: any) => Boolean(message?.isRead ?? message?.read);
+
+  const handleMarkAsRead = async (id: string) => {
+    try {
+      setActionLoadingId(id);
+      await messagesAPI.markAsRead(id);
+      if (onUpdate) {
+        await onUpdate();
+      }
+    } catch (error) {
+      console.error('Failed to mark message as read:', error);
+      alert('Failed to mark message as read');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this message?')) {
+      return;
+    }
+
+    try {
+      setActionLoadingId(id);
+      await messagesAPI.deleteMessage(id);
+      if (onUpdate) {
+        await onUpdate();
+      }
+    } catch (error) {
+      console.error('Failed to delete message:', error);
+      alert('Failed to delete message');
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
@@ -801,12 +873,33 @@ function MessagesSection({ messages, onUpdate }: any) {
                 <h4 className="font-bold text-lg">{msg.name || 'Unknown'}</h4>
                 <p className="text-gray-400 text-sm">{msg.email || 'No email'}</p>
               </div>
-              <span className={`px-3 py-1 rounded text-xs ${msg.isRead ? 'bg-gray-600' : 'bg-blue-600'}`}>
-                {msg.isRead ? 'Read' : 'Unread'}
+              <span className={`px-3 py-1 rounded text-xs ${isMessageRead(msg) ? 'bg-gray-600' : 'bg-blue-600'}`}>
+                {isMessageRead(msg) ? 'Read' : 'Unread'}
               </span>
             </div>
             <p className="text-gray-300 mb-3">{msg.message || 'No message content'}</p>
-            <p className="text-xs text-gray-500">{getFormattedDate(msg.createdAt)}</p>
+            <div className="flex items-center justify-between gap-4">
+              <p className="text-xs text-gray-500">{getFormattedDate(msg.createdAt)}</p>
+              <div className="flex gap-2">
+                {!isMessageRead(msg) && (
+                  <button
+                    onClick={() => handleMarkAsRead(msg._id)}
+                    disabled={actionLoadingId === msg._id}
+                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800/60 disabled:cursor-not-allowed rounded text-sm transition-colors"
+                  >
+                    {actionLoadingId === msg._id ? 'Working...' : 'Mark Read'}
+                  </button>
+                )}
+                <button
+                  onClick={() => handleDelete(msg._id)}
+                  disabled={actionLoadingId === msg._id}
+                  className="flex items-center gap-1 px-3 py-1 bg-red-600 hover:bg-red-700 disabled:bg-red-800/60 disabled:cursor-not-allowed rounded text-sm transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  {actionLoadingId === msg._id ? 'Working...' : 'Delete'}
+                </button>
+              </div>
+            </div>
           </div>
         ))
       ) : (
