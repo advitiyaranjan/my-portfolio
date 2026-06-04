@@ -53,7 +53,7 @@ export async function handleSkills(req, res, pathname) {
   const id = getIdFromUrl(pathname, '/api/skills');
 
   if (id && req.method === 'GET') {
-    const skill = skillsStorage.findById(id);
+    const skill = await skillsStorage.findById(id);
     if (!skill) return res.status(404).json({ success: false, message: 'Skill not found' });
     return res.status(200).json({ success: true, data: skill });
   }
@@ -61,7 +61,7 @@ export async function handleSkills(req, res, pathname) {
   if (id && req.method === 'PUT') {
     const user = requireAuth(req);
     if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
-    const updated = skillsStorage.updateById(id, req.body);
+    const updated = await skillsStorage.updateById(id, req.body);
     if (!updated) return res.status(404).json({ success: false, message: 'Skill not found' });
     return res.status(200).json({ success: true, message: 'Skill updated', data: updated });
   }
@@ -69,13 +69,13 @@ export async function handleSkills(req, res, pathname) {
   if (id && req.method === 'DELETE') {
     const user = requireAuth(req);
     if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
-    const deleted = skillsStorage.deleteById(id);
+    const deleted = await skillsStorage.deleteById(id);
     if (!deleted) return res.status(404).json({ success: false, message: 'Skill not found' });
     return res.status(200).json({ success: true, message: 'Skill deleted' });
   }
 
   if (req.method === 'GET') {
-    const skills = skillsStorage.findAll();
+    const skills = await skillsStorage.findAll();
     const sorted = skillsStorage.sort(skills, 'order', 1);
     return res.status(200).json({ success: true, data: sorted, count: sorted.length });
   }
@@ -89,7 +89,7 @@ export async function handleSkills(req, res, pathname) {
       return res.status(400).json({ success: false, message: 'Category and skills required' });
     }
 
-    const newSkill = skillsStorage.create({ category, skills: skillsList, order: order || 0 });
+    const newSkill = await skillsStorage.create({ category, skills: skillsList, order: order || 0 });
     return res.status(201).json({ success: true, message: 'Skill created', data: newSkill });
   }
 
@@ -102,7 +102,7 @@ export async function handleProjects(req, res, pathname) {
   const id = getIdFromUrl(pathname, '/api/projects');
 
   if (id && req.method === 'GET') {
-    const project = projectsStorage.findById(id);
+    const project = await projectsStorage.findById(id);
     if (!project) return res.status(404).json({ success: false, message: 'Project not found' });
     return res.status(200).json({ success: true, data: project });
   }
@@ -110,7 +110,7 @@ export async function handleProjects(req, res, pathname) {
   if (id && req.method === 'PUT') {
     const user = requireAuth(req);
     if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
-    const updated = projectsStorage.updateById(id, req.body);
+    const updated = await projectsStorage.updateById(id, req.body);
     if (!updated) return res.status(404).json({ success: false, message: 'Project not found' });
     return res.status(200).json({ success: true, message: 'Project updated', data: updated });
   }
@@ -118,13 +118,13 @@ export async function handleProjects(req, res, pathname) {
   if (id && req.method === 'DELETE') {
     const user = requireAuth(req);
     if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
-    const deleted = projectsStorage.deleteById(id);
+    const deleted = await projectsStorage.deleteById(id);
     if (!deleted) return res.status(404).json({ success: false, message: 'Project not found' });
     return res.status(200).json({ success: true, message: 'Project deleted' });
   }
 
   if (req.method === 'GET') {
-    const projects = projectsStorage.findAll();
+    const projects = await projectsStorage.findAll();
     const sorted = projectsStorage.sort(projects, 'order', 1);
     return res.status(200).json({ success: true, data: sorted, count: sorted.length });
   }
@@ -138,7 +138,7 @@ export async function handleProjects(req, res, pathname) {
       return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
 
-    const newProject = projectsStorage.create({
+    const newProject = await projectsStorage.create({
       title, description, techStack, imageUrl, githubLink, liveLink, order: 0
     });
     return res.status(201).json({ success: true, message: 'Project created', data: newProject });
@@ -153,7 +153,7 @@ export async function handleExperience(req, res, pathname) {
   const id = getIdFromUrl(pathname, '/api/experience');
 
   if (id && req.method === 'GET') {
-    const experience = experiencesStorage.findById(id);
+    const experience = await experiencesStorage.findById(id);
     if (!experience) return res.status(404).json({ success: false, message: 'Experience not found' });
     return res.status(200).json({ success: true, data: experience });
   }
@@ -161,7 +161,7 @@ export async function handleExperience(req, res, pathname) {
   if (id && req.method === 'PUT') {
     const user = requireAuth(req);
     if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
-    const updated = experiencesStorage.updateById(id, req.body);
+    const updated = await experiencesStorage.updateById(id, req.body);
     if (!updated) return res.status(404).json({ success: false, message: 'Experience not found' });
     return res.status(200).json({ success: true, message: 'Experience updated', data: updated });
   }
@@ -169,13 +169,13 @@ export async function handleExperience(req, res, pathname) {
   if (id && req.method === 'DELETE') {
     const user = requireAuth(req);
     if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
-    const deleted = experiencesStorage.deleteById(id);
+    const deleted = await experiencesStorage.deleteById(id);
     if (!deleted) return res.status(404).json({ success: false, message: 'Experience not found' });
     return res.status(200).json({ success: true, message: 'Experience deleted' });
   }
 
   if (req.method === 'GET') {
-    const experiences = experiencesStorage.findAll();
+    const experiences = await experiencesStorage.findAll();
     const sorted = experiencesStorage.sort(experiences, 'startDate', -1);
     return res.status(200).json({ success: true, data: sorted, count: sorted.length });
   }
@@ -189,7 +189,7 @@ export async function handleExperience(req, res, pathname) {
       return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
 
-    const newExperience = experiencesStorage.create({
+    const newExperience = await experiencesStorage.create({
       title, company, location, description, startDate, endDate, isCurrentRole
     });
     return res.status(201).json({ success: true, message: 'Experience created', data: newExperience });
@@ -204,7 +204,7 @@ export async function handleAchievements(req, res, pathname) {
   const id = getIdFromUrl(pathname, '/api/achievements');
 
   if (id && req.method === 'GET') {
-    const achievement = achievementsStorage.findById(id);
+    const achievement = await achievementsStorage.findById(id);
     if (!achievement) return res.status(404).json({ success: false, message: 'Achievement not found' });
     return res.status(200).json({ success: true, data: achievement });
   }
@@ -212,7 +212,7 @@ export async function handleAchievements(req, res, pathname) {
   if (id && req.method === 'PUT') {
     const user = requireAuth(req);
     if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
-    const updated = achievementsStorage.updateById(id, req.body);
+    const updated = await achievementsStorage.updateById(id, req.body);
     if (!updated) return res.status(404).json({ success: false, message: 'Achievement not found' });
     return res.status(200).json({ success: true, message: 'Achievement updated', data: updated });
   }
@@ -220,13 +220,13 @@ export async function handleAchievements(req, res, pathname) {
   if (id && req.method === 'DELETE') {
     const user = requireAuth(req);
     if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
-    const deleted = achievementsStorage.deleteById(id);
+    const deleted = await achievementsStorage.deleteById(id);
     if (!deleted) return res.status(404).json({ success: false, message: 'Achievement not found' });
     return res.status(200).json({ success: true, message: 'Achievement deleted' });
   }
 
   if (req.method === 'GET') {
-    const achievements = achievementsStorage.findAll();
+    const achievements = await achievementsStorage.findAll();
     const sorted = achievementsStorage.sort(achievements, 'order', 1);
     return res.status(200).json({ success: true, data: sorted, count: sorted.length });
   }
@@ -240,7 +240,7 @@ export async function handleAchievements(req, res, pathname) {
       return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
 
-    const newAchievement = achievementsStorage.create({
+    const newAchievement = await achievementsStorage.create({
       icon, title, subtitle, description, details, gradient, color, order: order || 0
     });
     return res.status(201).json({ success: true, message: 'Achievement created', data: newAchievement });
@@ -255,10 +255,10 @@ export async function handlePortfolio(req, res, pathname) {
   const id = getIdFromUrl(pathname, '/api/portfolio');
 
   if (pathname === '/api/portfolio/stats' && req.method === 'GET') {
-    const portfolio = portFolioStorage.findAll()[0] || null;
-    const projects = projectsStorage.findAll().length;
-    const skills = skillsStorage.findAll().length;
-    const experiences = experiencesStorage.findAll().length;
+    const portfolio = (await portFolioStorage.findAll())[0] || null;
+    const projects = (await projectsStorage.findAll()).length;
+    const skills = (await skillsStorage.findAll()).length;
+    const experiences = (await experiencesStorage.findAll()).length;
 
     return res.status(200).json({
       success: true,
@@ -274,11 +274,11 @@ export async function handlePortfolio(req, res, pathname) {
   }
 
   if (pathname === '/api/portfolio/view' && req.method === 'POST') {
-    const portfolios = portFolioStorage.findAll();
+    const portfolios = await portFolioStorage.findAll();
     let portfolio = portfolios[0];
 
     if (!portfolio) {
-      portfolio = portFolioStorage.create({
+      portfolio = await portFolioStorage.create({
         viewCount: 1,
         lastUpdated: new Date().toISOString(),
         socialLinks: {
@@ -288,7 +288,7 @@ export async function handlePortfolio(req, res, pathname) {
         },
       });
     } else {
-      portfolio = portFolioStorage.updateById(portfolio._id, {
+      portfolio = await portFolioStorage.updateById(portfolio._id, {
         viewCount: Number(portfolio.viewCount || 0) + 1,
       });
     }
@@ -301,13 +301,13 @@ export async function handlePortfolio(req, res, pathname) {
   }
 
   if (id && id !== 'stats' && req.method === 'GET') {
-    const portfolio = portFolioStorage.findById(id);
+    const portfolio = await portFolioStorage.findById(id);
     if (!portfolio) return res.status(404).json({ success: false, message: 'Portfolio not found' });
     return res.status(200).json({ success: true, data: portfolio });
   }
 
   if (req.method === 'GET') {
-    const portfolios = portFolioStorage.findAll();
+    const portfolios = await portFolioStorage.findAll();
     if (portfolios.length === 0) {
       return res.status(200).json({
         success: true,
@@ -329,17 +329,17 @@ export async function handlePortfolio(req, res, pathname) {
     const user = requireAuth(req);
     if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
 
-    const portfolios = portFolioStorage.findAll();
+    const portfolios = await portFolioStorage.findAll();
     let portfolio = portfolios[0];
     const lastUpdated = new Date().toISOString();
     if (!portfolio) {
-      portfolio = portFolioStorage.create({
+      portfolio = await portFolioStorage.create({
         ...req.body,
         viewCount: Number(req.body?.viewCount || 0),
         lastUpdated,
       });
     } else {
-      portfolio = portFolioStorage.updateById(portfolio._id, {
+      portfolio = await portFolioStorage.updateById(portfolio._id, {
         ...req.body,
         lastUpdated,
       });
@@ -360,7 +360,7 @@ export async function handleAuth(req, res, path) {
       return res.status(400).json({ success: false, message: 'Email and password required' });
     }
 
-    const user = usersStorage.findOne({ email });
+    const user = await usersStorage.findOne({ email });
     if (!user) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
@@ -389,12 +389,12 @@ export async function handleAuth(req, res, path) {
       return res.status(400).json({ success: false, message: 'Invalid email' });
     }
 
-    if (usersStorage.findOne({ email })) {
+    if (await usersStorage.findOne({ email })) {
       return res.status(400).json({ success: false, message: 'Email already registered' });
     }
 
     const hashedPassword = await hashPassword(password);
-    const newUser = usersStorage.create({ name, email, password: hashedPassword, role: 'admin' });
+    const newUser = await usersStorage.create({ name, email, password: hashedPassword, role: 'admin' });
     const token = generateToken(newUser._id, newUser.email);
     const { password: _, ...userWithoutPassword } = newUser;
     return res.status(201).json({
@@ -408,7 +408,7 @@ export async function handleAuth(req, res, path) {
     const user = requireAuth(req);
     if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
 
-    const userData = usersStorage.findById(user.userId);
+    const userData = await usersStorage.findById(user.userId);
     if (!userData) return res.status(404).json({ success: false, message: 'User not found' });
 
     const { password: _, ...userWithoutPassword } = userData;
@@ -425,7 +425,7 @@ export async function handleContact(req, res, pathname) {
   const action = getActionFromUrl(pathname, '/api/contact');
 
   if (pathname === '/api/contact/stats' && req.method === 'GET') {
-    const messages = contactStorage.findAll();
+    const messages = await contactStorage.findAll();
     const unreadCount = messages.filter((message) => !(message.isRead ?? message.read)).length;
     const repliedCount = messages.filter((message) => Boolean(message.repliedAt)).length;
 
@@ -440,7 +440,7 @@ export async function handleContact(req, res, pathname) {
   }
 
   if (id && req.method === 'GET') {
-    const contact = contactStorage.findById(id);
+    const contact = await contactStorage.findById(id);
     if (!contact) return res.status(404).json({ success: false, message: 'Contact not found' });
     return res.status(200).json({ success: true, data: contact });
   }
@@ -449,7 +449,7 @@ export async function handleContact(req, res, pathname) {
     const user = requireAuth(req);
     if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
 
-    const updated = contactStorage.updateById(id, {
+    const updated = await contactStorage.updateById(id, {
       read: true,
       isRead: true,
       readAt: new Date().toISOString(),
@@ -463,7 +463,7 @@ export async function handleContact(req, res, pathname) {
     const user = requireAuth(req);
     if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
 
-    const updated = contactStorage.updateById(id, {
+    const updated = await contactStorage.updateById(id, {
       repliedAt: new Date().toISOString(),
     });
 
@@ -475,13 +475,13 @@ export async function handleContact(req, res, pathname) {
     const user = requireAuth(req);
     if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
 
-    const deleted = contactStorage.deleteById(id);
+    const deleted = await contactStorage.deleteById(id);
     if (!deleted) return res.status(404).json({ success: false, message: 'Contact not found' });
     return res.status(200).json({ success: true, message: 'Message deleted' });
   }
 
   if (req.method === 'GET') {
-    const messages = contactStorage.findAll();
+    const messages = await contactStorage.findAll();
     const limit = parseInt(req.query?.limit || 10);
     const page = parseInt(req.query?.page || 1);
     const start = (page - 1) * limit;
@@ -517,7 +517,7 @@ export async function handleContact(req, res, pathname) {
       return res.status(400).json({ success: false, message: 'Invalid email address' });
     }
 
-    const contact = contactStorage.create({
+    const contact = await contactStorage.create({
       name: normalizedName,
       email: normalizedEmail,
       subject: normalizedSubject,
@@ -537,7 +537,7 @@ export async function handleCaseStudies(req, res, pathname) {
   const id = getIdFromUrl(pathname, '/api/case-studies');
 
   if (id && req.method === 'GET') {
-    const caseStudy = caseStudiesStorage.findById(id);
+    const caseStudy = await caseStudiesStorage.findById(id);
     if (!caseStudy) return res.status(404).json({ success: false, message: 'Case study not found' });
     return res.status(200).json({ success: true, data: caseStudy });
   }
@@ -545,7 +545,7 @@ export async function handleCaseStudies(req, res, pathname) {
   if (id && req.method === 'PUT') {
     const user = requireAuth(req);
     if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
-    const updated = caseStudiesStorage.updateById(id, req.body);
+    const updated = await caseStudiesStorage.updateById(id, req.body);
     if (!updated) return res.status(404).json({ success: false, message: 'Case study not found' });
     return res.status(200).json({ success: true, message: 'Case study updated', data: updated });
   }
@@ -553,13 +553,13 @@ export async function handleCaseStudies(req, res, pathname) {
   if (id && req.method === 'DELETE') {
     const user = requireAuth(req);
     if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
-    const deleted = caseStudiesStorage.deleteById(id);
+    const deleted = await caseStudiesStorage.deleteById(id);
     if (!deleted) return res.status(404).json({ success: false, message: 'Case study not found' });
     return res.status(200).json({ success: true, message: 'Case study deleted' });
   }
 
   if (req.method === 'GET') {
-    const caseStudies = caseStudiesStorage.findAll();
+    const caseStudies = await caseStudiesStorage.findAll();
     const sorted = caseStudiesStorage.sort(caseStudies, 'order', 1);
     return res.status(200).json({ success: true, data: sorted, count: sorted.length });
   }
@@ -573,7 +573,7 @@ export async function handleCaseStudies(req, res, pathname) {
       return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
 
-    const caseStudy = caseStudiesStorage.create({
+    const caseStudy = await caseStudiesStorage.create({
       title, description, challenge, solution, results, order: 0
     });
     return res.status(201).json({ success: true, message: 'Case study created', data: caseStudy });

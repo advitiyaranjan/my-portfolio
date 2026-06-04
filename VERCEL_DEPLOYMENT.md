@@ -42,7 +42,10 @@ Add these in the Vercel project settings:
 1. Go to your project's **Settings**
 2. Click **Environment Variables**
 3. Add `JWT_SECRET` with a strong random value
-4. Optionally add `VITE_API_URL` only if you intentionally want the frontend to call an external API instead of the same Vercel deployment
+4. Create and attach a **Vercel Blob** store from the project's **Storage** tab
+5. Verify `BLOB_READ_WRITE_TOKEN` is available in the project environment variables
+6. Add `BLOB_ACCESS=private` if your Blob store is private
+7. Optionally add `VITE_API_URL` only if you intentionally want the frontend to call an external API instead of the same Vercel deployment
 
 ### 4. Trigger Deployment
 
@@ -62,11 +65,17 @@ Visit your Vercel domain and check:
 
 ### 6. Understand Data Persistence
 
-The API stores JSON data in `/tmp` in production. On Vercel that storage is ephemeral:
+The API supports **durable Vercel Blob storage** for production content:
 
-- Seed content is recreated automatically on cold start
-- Admin edits are not guaranteed to persist across deployments or instance recycling
-- If you need durable admin-managed content, move storage to a real database or external object store
+- When `BLOB_READ_WRITE_TOKEN` is configured, portfolio data and messages are stored durably in Vercel Blob
+- When Blob storage is not configured, the API falls back to `/tmp`, which is ephemeral on Vercel
+- For production, durable persistence requires the Blob store to be attached to the same Vercel project
+
+Recommended setup:
+
+- Use a **private** Blob store for admin-managed content
+- Set `BLOB_ACCESS=private`
+- Redeploy after attaching the Blob store
 
 ## Troubleshooting
 
@@ -107,12 +116,25 @@ The API stores JSON data in `/tmp` in production. On Vercel that storage is ephe
 - Check Vercel build logs
 - Redeploy
 
+### 5. Messages or admin changes disappear after some time
+
+**Cause**: Vercel Blob is not configured, so the API is using ephemeral `/tmp` storage
+
+**Solution**:
+- Go to Vercel project → **Storage**
+- Create and attach a Blob store
+- Confirm `BLOB_READ_WRITE_TOKEN` exists in the project environment variables
+- Set `BLOB_ACCESS=private` when using a private store
+- Redeploy the project
+
 ## Environment Variables Summary
 
 ### Vercel (Frontend) Environment Variables
 
 ```
 JWT_SECRET=your_random_secret_key_min_32_chars
+BLOB_READ_WRITE_TOKEN=added_automatically_when_blob_store_is_connected
+BLOB_ACCESS=private
 ```
 
 ### Optional External API Variable

@@ -181,7 +181,7 @@ Popular options:
 - **Render** (Free, Recommended)
 - **Railway** (Free tier available)
 - **Cyclic** (Free)
-- **Vercel** (Frontend only)
+- **Vercel** (Frontend + serverless API with Blob storage for durable admin data)
 
 ## 📚 Complete API Reference
 
