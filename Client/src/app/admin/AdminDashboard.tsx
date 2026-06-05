@@ -37,6 +37,10 @@ interface AdminDashboardProps {
   onUpdate?: () => void;
 }
 
+interface DashboardUpdatePayload {
+  portfolio?: any;
+}
+
 export default function AdminDashboard({ onUpdate }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(false);
@@ -45,8 +49,18 @@ export default function AdminDashboard({ onUpdate }: AdminDashboardProps) {
   const [messages, setMessages] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const handleContentUpdate = async () => {
-    await loadOverviewData();
+  const handleContentUpdate = async (payload?: DashboardUpdatePayload) => {
+    if (payload?.portfolio) {
+      setPortfolio(payload.portfolio);
+      setStats((currentStats: any) => ({
+        ...currentStats,
+        lastUpdated: payload.portfolio.lastUpdated || payload.portfolio.updatedAt || currentStats?.lastUpdated || null,
+        updatedAt: payload.portfolio.updatedAt || currentStats?.updatedAt || null,
+        viewCount: payload.portfolio.viewCount ?? currentStats?.viewCount ?? 0,
+      }));
+    }
+
+    await loadOverviewData({ skipPortfolio: Boolean(payload?.portfolio) });
     onUpdate?.();
   };
 
@@ -59,17 +73,19 @@ export default function AdminDashboard({ onUpdate }: AdminDashboardProps) {
     }
   }, [activeTab]);
 
-  const loadOverviewData = async () => {
+  const loadOverviewData = async ({ skipPortfolio = false }: { skipPortfolio?: boolean } = {}) => {
     try {
       setLoading(true);
       setError(null);
       
       // Try to load portfolio
-      try {
-        const result = await portfolioAPI.getPortfolio();
-        setPortfolio(result?.data || result);
-      } catch (err) {
-        console.warn('Failed to load portfolio:', err);
+      if (!skipPortfolio) {
+        try {
+          const result = await portfolioAPI.getPortfolio();
+          setPortfolio(result?.data || result);
+        } catch (err) {
+          console.warn('Failed to load portfolio:', err);
+        }
       }
 
       // Try to load stats
@@ -596,8 +612,24 @@ function ProfileSection({ portfolio, onUpdate }: any) {
     e.preventDefault();
     try {
       setLoading(true);
-      await portfolioAPI.updatePortfolio(formData);
-      if (onUpdate) onUpdate();
+      const response = await portfolioAPI.updatePortfolio(formData);
+      const updatedPortfolio = response?.data || formData;
+      setFormData({
+        fullName: updatedPortfolio.fullName || '',
+        title: updatedPortfolio.title || '',
+        bio: updatedPortfolio.bio || '',
+        email: updatedPortfolio.email || '',
+        phone: updatedPortfolio.phone || '',
+        location: updatedPortfolio.location || '',
+        resumeLink: updatedPortfolio.resumeLink || '',
+        socialLinks: {
+          github: updatedPortfolio.socialLinks?.github || '',
+          linkedin: updatedPortfolio.socialLinks?.linkedin || '',
+          twitter: updatedPortfolio.socialLinks?.twitter || '',
+        },
+        profileImage: updatedPortfolio.profileImage || null
+      });
+      if (onUpdate) await onUpdate({ portfolio: updatedPortfolio });
       alert('Profile updated successfully!');
     } catch (err) {
       console.error('Update failed:', err);
