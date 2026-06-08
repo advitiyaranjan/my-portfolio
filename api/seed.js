@@ -94,17 +94,24 @@ async function mergeMissingSkillsIntoCategories(storage, categories) {
 async function seedData() {
   console.log('🌱 Seeding data...');
 
-  // Create default admin user
-  const existingUser = await usersStorage.findOne({ email: 'advityaranjan1@gmail.com' });
-  if (!existingUser) {
-    const hashedPassword = await hashPassword('admin123');
-    await usersStorage.create({
-      name: 'Admin User',
-      email: 'advityaranjan1@gmail.com',
-      password: hashedPassword,
-      role: 'admin'
-    });
-    console.log('✅ Admin user created');
+  // Create default admin user from environment variables
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminPassword = process.env.ADMIN_PASSWORD;
+
+  if (!adminEmail || !adminPassword) {
+    console.warn('⚠️ ADMIN_EMAIL or ADMIN_PASSWORD env vars not set — skipping admin user creation.');
+  } else {
+    const existingUser = await usersStorage.findOne({ email: adminEmail });
+    if (!existingUser) {
+      const hashedPassword = await hashPassword(adminPassword);
+      await usersStorage.create({
+        name: 'Admin User',
+        email: adminEmail,
+        password: hashedPassword,
+        role: 'admin'
+      });
+      console.log('✅ Admin user created');
+    }
   }
 
   // Seed portfolio info

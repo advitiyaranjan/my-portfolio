@@ -47,7 +47,7 @@ Edit `Server/.env`:
 # Get from MongoDB Atlas
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/portfolio_db?retryWrites=true&w=majority
 
-# Generate a random secret
+# Generate a random secret (e.g. openssl rand -hex 32)
 JWT_SECRET=your_super_secret_key_here
 
 # Gmail setup (see below)
@@ -56,6 +56,10 @@ EMAIL_PASSWORD=your_app_password
 
 # Default frontend URL
 FRONTEND_URL=http://localhost:5173
+
+# Default admin account created on first run
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=change_me_immediately
 ```
 
 **📧 Gmail Setup:**
@@ -99,8 +103,8 @@ curl -X POST http://localhost:5000/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Your Name",
-    "email": "admin@yourportfolio.com",
-    "password": "securepassword123"
+    "email": "your_admin@example.com",
+    "password": "your_secure_password"
   }'
 ```
 
