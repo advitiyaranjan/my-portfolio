@@ -91,6 +91,20 @@ async function mergeMissingSkillsIntoCategories(storage, categories) {
   return updatedCount;
 }
 
+async function seedCollectionIfEmpty(storage, records, label) {
+  const existingRecords = await storage.findAll();
+  if (existingRecords.length > 0) {
+    return false;
+  }
+
+  for (const record of records) {
+    await storage.create(record);
+  }
+
+  console.log(`✅ ${label} data created`);
+  return true;
+}
+
 async function seedData() {
   console.log('🌱 Seeding data...');
 
@@ -184,14 +198,7 @@ async function seedData() {
       }
     ];
 
-  {
-    const insertedCount = await backfillMissingRecords(skillsStorage, skillCategories, 'category');
-    const mergedCount = await mergeMissingSkillsIntoCategories(skillsStorage, skillCategories);
-    const repairedCount = await repairDefaultRecords(skillsStorage, skillCategories, 'category');
-    if (insertedCount > 0 || mergedCount > 0 || repairedCount > 0) {
-      console.log('✅ Skills data repaired');
-    }
-  }
+  await seedCollectionIfEmpty(skillsStorage, skillCategories, 'Skills');
 
   // Seed projects
   const projects = [
@@ -263,13 +270,7 @@ async function seedData() {
       }
     ];
 
-  {
-    const insertedCount = await backfillMissingRecords(projectsStorage, projects, 'title');
-    const repairedCount = await repairDefaultRecords(projectsStorage, projects, 'title');
-    if (insertedCount > 0 || repairedCount > 0) {
-      console.log('✅ Projects data repaired');
-    }
-  }
+  await seedCollectionIfEmpty(projectsStorage, projects, 'Projects');
 
   // Seed experiences
   const experiences = [
@@ -299,13 +300,7 @@ async function seedData() {
       }
     ];
 
-  {
-    const insertedCount = await backfillMissingRecords(experiencesStorage, experiences, 'title');
-    const repairedCount = await repairDefaultRecords(experiencesStorage, experiences, 'title');
-    if (insertedCount > 0 || repairedCount > 0) {
-      console.log('✅ Experiences data repaired');
-    }
-  }
+  await seedCollectionIfEmpty(experiencesStorage, experiences, 'Experiences');
 
   // Seed achievements
   const achievements = [
@@ -355,13 +350,7 @@ async function seedData() {
       }
     ];
 
-  {
-    const insertedCount = await backfillMissingRecords(achievementsStorage, achievements, 'title');
-    const repairedCount = await repairDefaultRecords(achievementsStorage, achievements, 'title');
-    if (insertedCount > 0 || repairedCount > 0) {
-      console.log('✅ Achievements data repaired');
-    }
-  }
+  await seedCollectionIfEmpty(achievementsStorage, achievements, 'Achievements');
 
   // Seed case studies
   const caseStudies = [
@@ -400,13 +389,7 @@ async function seedData() {
       }
     ];
 
-  {
-    const insertedCount = await backfillMissingRecords(caseStudiesStorage, caseStudies, 'title');
-    const repairedCount = await repairDefaultRecords(caseStudiesStorage, caseStudies, 'title');
-    if (insertedCount > 0 || repairedCount > 0) {
-      console.log('✅ Case studies data repaired');
-    }
-  }
+  await seedCollectionIfEmpty(caseStudiesStorage, caseStudies, 'Case studies');
 
   console.log('✨ Data seeding complete!');
 }
