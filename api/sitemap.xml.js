@@ -1,0 +1,18 @@
+// API route for /api/sitemap.xml to serve the sitemap
+export default function handler(req, res) {
+  res.setHeader('Content-Type', 'application/xml');
+  res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?>
+<urlset
+      xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+            http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+<!-- created with Free Online Sitemap Generator www.xml-sitemaps.com -->
+
+<url>
+  <loc>https://advitiyaranjan.in/</loc>
+  <lastmod>2026-04-09T08:23:51+00:00</lastmod>
+</url>
+
+</urlset>`);
+}
