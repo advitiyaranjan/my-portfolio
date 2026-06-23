@@ -1,59 +1,47 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
-import MainApp from './app/pages/MainApp';
-import Login from './app/pages/Login';
-import Dashboard from './app/pages/admin/Dashboard';
+import { lazy, Suspense } from 'react';
+import { MotionConfig } from 'motion/react';
+import { ThemeProvider } from './app/theme';
 import ProtectedRoute from './app/components/ProtectedRoute';
 
-export default function Router() {
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+// Each route is its own chunk: the login page no longer has to download the whole portfolio first.
+const MainApp = lazy(() => import('./app/pages/MainApp'));
+const Login = lazy(() => import('./app/pages/Login'));
+const Dashboard = lazy(() => import('./app/pages/admin/Dashboard'));
 
-  // Initialize theme from localStorage or system preference
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-    const initialTheme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
-    setTheme(initialTheme);
-
-    if (initialTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    }
-  }, []);
-
-  const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
-
-    if (newTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  };
-
+function RouteFallback() {
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Main portfolio page */}
-        <Route path="/" element={<MainApp theme={theme} toggleTheme={toggleTheme} />} />
-        
-        {/* Login page */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/admin/login" element={<Navigate to="/login" replace />} />
-        <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-        
-        {/* Protected admin dashboard */}
-        <Route 
-          path="/admin/dashboard" 
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          } 
-        />
-      </Routes>
-    </BrowserRouter>
+    <div className="min-h-screen grid place-items-center bg-background">
+      <div className="h-10 w-10 rounded-full border-2 border-border border-t-neon-violet animate-spin" aria-label="Loading" />
+    </div>
+  );
+}
+
+export default function Router() {
+  return (
+    <ThemeProvider>
+      <MotionConfig reducedMotion="user">
+        <BrowserRouter>
+          <Suspense fallback={<RouteFallback />}>
+            <Routes>
+              <Route path="/" element={<MainApp />} />
+
+              <Route path="/login" element={<Login />} />
+              <Route path="/admin/login" element={<Navigate to="/login" replace />} />
+              <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+
+              <Route
+                path="/admin/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+            </Routes>
+          </Suspense>
+        </BrowserRouter>
+      </MotionConfig>
+    </ThemeProvider>
   );
 }

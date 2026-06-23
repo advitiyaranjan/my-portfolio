@@ -1,4 +1,4 @@
-import { usersStorage, skillsStorage, projectsStorage, experiencesStorage, achievementsStorage, portFolioStorage, caseStudiesStorage } from './lib/storage.js';
+import { usersStorage, skillsStorage, projectsStorage, experiencesStorage, achievementsStorage, portFolioStorage, caseStudiesStorage, certificationsStorage } from './lib/storage.js';
 import { hashPassword } from './lib/auth.js';
 import { fileURLToPath } from 'url';
 
@@ -105,6 +105,394 @@ async function seedCollectionIfEmpty(storage, records, label) {
   return true;
 }
 
+// Bump this whenever the default content below changes. On the next cold start, an existing
+// deployment whose stored content is older is refreshed once from these defaults; after that,
+// edits made in the admin dashboard are left alone until the version changes again.
+export const CONTENT_VERSION = '2026-09-cv-refresh';
+
+const LINKS = {
+  github: 'https://github.com/advitiyaranjan',
+  linkedin: 'https://www.linkedin.com/in/advitiya-ranjan',
+  twitter: 'https://x.com/advitiyaranjan',
+  leetcode: 'https://leetcode.com/advitiyaranjan',
+  website: 'https://advitiyaranjan.in',
+  email: 'ranjanadvitiya@gmail.com',
+};
+
+const portfolioContent = {
+  fullName: 'Advitiya Ranjan',
+  title: 'Full Stack Developer & AI/ML Engineer',
+  bio: 'I build scalable full-stack products with React, Node.js and TypeScript, and bring machine learning into them with PyTorch. Integrated B.Tech (IT) + MBA at IIITM Gwalior, GATE 2026 qualified and a Google Student Ambassador.',
+  aboutDescription: "I'm pursuing an Integrated B.Tech (IT) + MBA at the Indian Institute of Information Technology and Management, Gwalior, where I work at the intersection of engineering and product thinking.\n\nI've shipped full-stack features as a Full Stack Developer Intern at Codec Technologies, analysed 50,000+ telemetry records in Deloitte's data analytics simulation, and now represent Google Gemini on campus as a Google Student Ambassador, running workshops for a 1,000+ strong student developer community.\n\nAlongside building, I qualified GATE 2026 in Computer Science (AIR 3460), have solved 500+ DSA problems, and hold certifications from Google, DeepLearning.AI, Meta and Cisco.",
+  education: {
+    institution: 'Indian Institute of Information Technology and Management, Gwalior',
+    shortName: 'IIITM Gwalior',
+    degree: 'Integrated B.Tech (IT) + M.B.A.',
+    period: '2023 – 2028',
+    cgpa: '7.96',
+  },
+  email: LINKS.email,
+  phone: '+91 9430435643',
+  location: 'IIITM Gwalior, Madhya Pradesh, India',
+  resumeLink: '/Advitiya_Ranjan_Resume.pdf',
+  socialLinks: {
+    github: LINKS.github,
+    linkedin: LINKS.linkedin,
+    twitter: LINKS.twitter,
+    leetcode: LINKS.leetcode,
+    website: LINKS.website,
+    email_link: `mailto:${LINKS.email}`,
+  },
+  stats: {
+    projectsCompleted: 7,
+    yearsExperience: 1,
+    usersImpacted: 1,
+    technologiesCount: 30,
+  },
+  heroHighlights: [
+    { value: 'AIR 3460', label: 'GATE 2026 · CS' },
+    { value: '500+', label: 'DSA problems' },
+    { value: '1K+', label: 'Students reached' },
+  ],
+  aboutHighlights: [
+    {
+      id: 1,
+      icon: 'Code',
+      title: 'Full Stack Engineering',
+      description: 'React, Next.js, Node.js, Express and TypeScript, from REST APIs and MongoDB schemas to deployed, responsive interfaces.',
+    },
+    {
+      id: 2,
+      icon: 'Lightbulb',
+      title: 'AI & Machine Learning',
+      description: 'PyTorch, TensorFlow and scikit-learn for deep learning, computer vision and practical ML features.',
+    },
+    {
+      id: 3,
+      icon: 'Users',
+      title: 'Community & Leadership',
+      description: 'Google Student Ambassador, Chairman of the IIITM Hindi Club and Social Media Head at Rotaract.',
+    },
+    {
+      id: 4,
+      icon: 'Target',
+      title: 'Problem Solver',
+      description: 'GATE 2026 AIR 3460 and 500+ DSA problems solved across LeetCode, Codeforces and GeeksforGeeks.',
+    },
+  ],
+};
+
+const skillCategories = [
+  {
+    category: 'Languages',
+    skills: ['C/C++', 'Python', 'JavaScript (ES6+)', 'TypeScript', 'SQL', 'Solidity'].map((name) => ({ name })),
+    order: 1,
+  },
+  {
+    category: 'Frameworks & Libraries',
+    skills: ['React.js', 'Next.js', 'Node.js', 'Express.js', 'PyTorch', 'TensorFlow', 'Scikit-learn', 'Web3.js', 'Hardhat', 'REST APIs'].map((name) => ({ name })),
+    order: 2,
+  },
+  {
+    category: 'AI & ML',
+    skills: ['Machine Learning', 'Deep Learning', 'Neural Networks', 'Generative AI', 'Prompt Engineering', 'Computer Vision', 'Vertex AI'].map((name) => ({ name })),
+    order: 3,
+  },
+  {
+    category: 'Databases, Cloud & Tools',
+    skills: ['MongoDB', 'MySQL', 'Firebase', 'Supabase', 'AWS', 'Google Cloud', 'Git', 'GitHub', 'Docker', 'Jira', 'Postman', 'Linux'].map((name) => ({ name })),
+    order: 4,
+  },
+  {
+    category: 'Core Fundamentals',
+    skills: ['Data Structures & Algorithms', 'OOP', 'Operating Systems', 'Computer Networks', 'DBMS', 'Computer Architecture', 'System Design', 'SDLC', 'Agile & Scrum'].map((name) => ({ name })),
+    order: 5,
+  },
+];
+
+const projects = [
+  {
+    title: 'ViswaKart: E-commerce Platform',
+    description: 'Full-stack e-commerce platform with Clerk authentication, a dynamic product catalogue, cart management and secure Stripe payments.',
+    highlights: [
+      'RESTful Node.js/Express APIs for products, orders and users, backed by MongoDB with optimised query indexing',
+      'Frontend on Vercel and backend on Render, with sub-2s page loads and seamless cross-device responsiveness',
+    ],
+    techStack: ['React.js (Vite)', 'Node.js', 'Express', 'MongoDB', 'Clerk', 'Stripe'],
+    imageUrl: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=500&h=300&fit=crop',
+    githubLink: 'https://github.com/advitiyaranjan/ViswaKart',
+    liveLink: 'https://ecom.advitiyaranjan.in',
+    gradient: 'from-blue-500 to-cyan-500',
+    color: 'blue',
+    order: 1,
+  },
+  {
+    title: 'Personal Portfolio',
+    description: 'This site: a serverless React + TypeScript portfolio with a password-protected admin dashboard that manages every section without a separate database.',
+    highlights: [
+      'Serverless API on Vercel with JSON/Blob storage and a JWT-secured admin dashboard',
+      'Futuristic UI with light and dark themes, responsive layouts and smooth transitions',
+    ],
+    techStack: ['React', 'TypeScript', 'Tailwind CSS', 'Vite', 'Vercel'],
+    imageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=500&h=300&fit=crop',
+    githubLink: 'https://github.com/advitiyaranjan/my-portfolio',
+    liveLink: 'https://advitiyaranjan.in',
+    gradient: 'from-indigo-500 to-blue-500',
+    color: 'indigo',
+    order: 2,
+  },
+  {
+    title: 'AI-Powered Finance Tracker',
+    description: 'Intelligent expense tracker with a React frontend and a Flask REST API for real-time transaction logging and categorisation.',
+    highlights: [
+      'PyTorch + scikit-learn model analyses spending patterns and generates personalised budget recommendations with 85%+ prediction accuracy',
+      'Interactive Chart.js dashboards for monthly trends, category breakdowns and AI-generated savings insights',
+    ],
+    techStack: ['React', 'Python', 'Flask', 'PyTorch', 'Scikit-learn', 'Chart.js'],
+    imageUrl: 'https://images.unsplash.com/photo-1533750349088-75e1b6b6a45f?w=500&h=300&fit=crop',
+    githubLink: 'https://github.com/advitiyaranjan/ai-finance-tracker',
+    liveLink: '',
+    gradient: 'from-yellow-500 to-orange-500',
+    color: 'yellow',
+    order: 3,
+  },
+  {
+    title: 'Predictive Pareto Dispatcher',
+    description: 'Algorithmic dispatcher built at a national hackathon that dynamically balances operational cost against carbon emissions using Pareto optimisation.',
+    highlights: [
+      'Custom multi-objective optimisation formulas cut simulated operational losses by 30% while reducing emission overhead',
+      'Stress-tested against 10,000+ synthetic dispatch scenarios under peak-load conditions',
+    ],
+    techStack: ['Python', 'Optimization Algorithms', 'System Architecture'],
+    imageUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500&h=300&fit=crop',
+    githubLink: '',
+    liveLink: '',
+    gradient: 'from-green-500 to-emerald-500',
+    color: 'green',
+    order: 4,
+  },
+];
+
+const experiences = [
+  {
+    title: 'Student Ambassador',
+    company: 'Google',
+    type: 'Ambassador Program',
+    location: 'IIITM Gwalior · On campus',
+    description: 'Campus liaison between Google and the university, promoting Google Gemini and AI technologies to a student body of 1,000+.\nFacilitated 7 technical workshops and events, fostering a 1,000+ student developer community and increasing engagement with Google tools by an estimated 65%.',
+    startDate: '2026-05-29',
+    endDate: null,
+    isCurrentRole: true,
+    technologies: ['Google Gemini', 'Generative AI', 'Technical Workshops', 'Community Building'],
+    credentialUrl: 'https://drive.google.com/file/d/1LNmxdqpx_Y6_zoEA7_6nLT1C6EzCv4Il/view',
+    credentialLabel: 'Offer letter',
+    gradient: 'from-blue-500 to-cyan-500',
+    color: 'blue',
+  },
+  {
+    title: 'Full Stack Developer Intern',
+    company: 'Codec Technologies',
+    type: 'Internship',
+    location: 'Hybrid · India',
+    description: 'Engineered and deployed scalable web features using React.js, Node.js and TypeScript, delivering 3+ full-stack projects during a 12-week AICTE & ICAC approved program.\nOptimised backend API performance and frontend responsiveness for an estimated 20% reduction in load times, with consistently high ratings across 12 weekly performance reviews.',
+    startDate: '2026-03-28',
+    endDate: '2026-06-28',
+    isCurrentRole: false,
+    technologies: ['React.js', 'Node.js', 'TypeScript', 'Express', 'REST APIs'],
+    credentialUrl: 'https://drive.google.com/file/d/1IDCgjo2RUq7ne6ZfQtr1fahTAC9Gj8y7/view?usp=sharing',
+    credentialLabel: 'Certificate',
+    gradient: 'from-purple-500 to-pink-500',
+    color: 'purple',
+  },
+  {
+    title: 'Data Analyst',
+    company: 'Deloitte',
+    type: 'Job Simulation · Forage',
+    location: 'Remote',
+    description: 'Analysed 50,000+ telemetry records across multiple industrial locations using SQL and Tableau to track and visualise machine downtime.\nDelivered actionable insights for client business problems, streamlining data reporting and identifying patterns that could reduce operational inefficiencies by 90%.',
+    startDate: '2026-03-01',
+    endDate: '2026-03-29',
+    isCurrentRole: false,
+    technologies: ['SQL', 'Tableau', 'Data Analysis', 'Forensic Technology'],
+    credentialUrl: 'https://drive.google.com/file/d/101aclxju0aURa327ZccXFLW8doXdL_Ew/view?usp=sharing',
+    credentialLabel: 'Certificate',
+    gradient: 'from-green-500 to-emerald-500',
+    color: 'green',
+  },
+  {
+    title: 'Blockchain & Governance Research',
+    company: 'Working Group on Technology for Viksit Bharat',
+    type: 'Research',
+    location: 'India · Remote',
+    description: 'Researched and prototyped blockchain-based governance systems to improve transparency, security and efficiency in public service delivery.\nDesigned use-cases for Decentralized Identity (DID) and smart contracts in citizen authentication, land records and subsidy automation.\nExplored AI-driven policy analytics, IoT-enabled infrastructure monitoring and integration with Digital Public Goods.',
+    startDate: '2025-02-01',
+    endDate: '2025-07-31',
+    isCurrentRole: false,
+    technologies: ['Blockchain', 'Smart Contracts', 'Decentralized Identity (DID)', 'AI Policy Analytics', 'IoT'],
+    gradient: 'from-orange-500 to-red-500',
+    color: 'orange',
+  },
+];
+
+const achievements = [
+  {
+    icon: 'Award',
+    title: 'GATE 2026 Qualified',
+    subtitle: 'Computer Science & Information Technology',
+    description: 'Secured All India Rank 3460 among 211,020 candidates with a GATE score of 589 and 50.41 marks out of 100, showing strong command of algorithms, operating systems, networks and DBMS.',
+    details: ['AIR 3460', 'GATE Score 589', '50.41 / 100 marks', '211,020 candidates'],
+    gradient: 'from-blue-500 to-cyan-500',
+    color: 'blue',
+    order: 1,
+    link: 'https://drive.google.com/file/d/1hRbjxoTqNtuv89K-Rr839Qv8niUzSpeE/view?usp=drivesdk',
+  },
+  {
+    icon: 'Target',
+    title: 'National Youth Festival 2025 Finalist',
+    subtitle: 'Tech for Viksit Bharat',
+    description: 'Ranked among the top 1,000 of 30,00,000+ participants nationwide for an innovative, tech-driven solution to modernise public governance and citizen services.',
+    details: ['Top 1,000 nationally', '30 lakh+ participants', 'Governance technology'],
+    gradient: 'from-purple-500 to-pink-500',
+    color: 'purple',
+    order: 2,
+  },
+  {
+    icon: 'Users',
+    title: 'Chairman, IIITM Hindi Club',
+    subtitle: 'Cultural & Literary Leadership',
+    description: 'Led and organised 50+ cultural and literary events blending Hindi language promotion with modern digital platforms; managed a 20+ member core team and grew participation by over 60% year-on-year.',
+    details: ['50+ events', '20+ member core team', '+60% YoY participation'],
+    gradient: 'from-orange-500 to-red-500',
+    color: 'orange',
+    order: 3,
+  },
+  {
+    icon: 'Megaphone',
+    title: 'Social Media Head, Rotaract Club',
+    subtitle: 'IIITM Gwalior',
+    description: "Designed and executed digital outreach campaigns, content strategy and brand identity for community service initiatives, tripling the club's social media following and boosting volunteer recruitment.",
+    details: ['3x social following', 'Content strategy', 'Brand identity'],
+    gradient: 'from-purple-500 to-pink-500',
+    color: 'purple',
+    order: 4,
+  },
+  {
+    icon: 'Code',
+    title: 'Competitive Programming',
+    subtitle: '500+ DSA Problems Solved',
+    description: 'Solved 500+ data structures and algorithms problems across LeetCode, Codeforces and GeeksforGeeks, covering dynamic programming, graphs, trees, sorting and greedy algorithms.',
+    details: ['LeetCode', 'Codeforces', 'GeeksforGeeks'],
+    gradient: 'from-green-500 to-emerald-500',
+    color: 'green',
+    order: 5,
+    link: LINKS.leetcode,
+  },
+];
+
+const certifications = [
+  {
+    title: 'Google AI Professional Certificate',
+    issuer: 'Google',
+    platform: 'Coursera',
+    issueDate: '2026-08-21',
+    credentialId: 'O3NWLOUN6T5V',
+    verifyUrl: 'https://coursera.org/verify/professional-cert/O3NWLOUN6T5V',
+    description: 'Seven-course program on applying AI to brainstorming, research, writing, content creation, data analysis and app building, with a portfolio of 20+ AI-built artifacts.',
+    modules: ['AI Fundamentals', 'AI for Research & Insights', 'AI for Data Analysis', 'AI for App Building'],
+    order: 1,
+  },
+  {
+    title: 'PyTorch for Deep Learning Professional Certificate',
+    issuer: 'DeepLearning.AI',
+    platform: 'Coursera',
+    issueDate: '2026-08-30',
+    credentialId: 'E8T0O3OA2FV4',
+    verifyUrl: 'https://coursera.org/verify/professional-cert/E8T0O3OA2FV4',
+    description: 'Three-course program from PyTorch fundamentals to advanced architectures and deployment, tackling computer vision and NLP with TorchVision and Hugging Face models.',
+    modules: ['PyTorch Fundamentals', 'Techniques & Ecosystem Tools', 'Advanced Architectures & Deployment'],
+    order: 2,
+  },
+  {
+    title: 'Google Project Management Professional Certificate',
+    issuer: 'Google',
+    platform: 'Coursera',
+    issueDate: '2026-08-24',
+    credentialId: 'GM3C7IYE8SNL',
+    verifyUrl: 'https://coursera.org/verify/professional-cert/GM3C7IYE8SNL',
+    description: 'Seven-course program covering the full project lifecycle: initiating, planning and running traditional and Agile projects, risk management and stakeholder communication.',
+    modules: ['Project Initiation', 'Project Planning', 'Agile Project Management', 'Capstone'],
+    order: 3,
+  },
+  {
+    title: 'Programming in Python',
+    issuer: 'Meta',
+    platform: 'Coursera',
+    issueDate: '2026-08-28',
+    credentialId: 'QQX1FFPDQTXM',
+    verifyUrl: 'https://coursera.org/verify/QQX1FFPDQTXM',
+    description: 'Core Python programming: object-oriented and functional paradigms, data structures, algorithms, file I/O and scripting best practices.',
+    modules: ['OOP', 'Data Structures', 'Functional Programming', 'File I/O'],
+    order: 4,
+  },
+  {
+    title: 'Networking Basics',
+    issuer: 'Cisco',
+    platform: 'Cisco Networking Academy',
+    issueDate: '2026-08-26',
+    credentialId: '4b496569-0d5d-49e4-be15-d5a6feab9e48',
+    verifyUrl: 'https://www.netacad.com/certificates/4b496569-0d5d-49e4-be15-d5a6feab9e48',
+    description: 'Computer networking foundations: OSI and TCP/IP models, IP addressing and subnetting, routing and switching, and network security basics.',
+    modules: ['OSI & TCP/IP', 'IP Addressing', 'Routing & Switching', 'Network Security'],
+    order: 5,
+  },
+  {
+    title: 'Google AI Essentials',
+    issuer: 'Google',
+    platform: 'Coursera',
+    issueDate: '2026-05-20',
+    credentialId: 'DL6WORWYKUR6',
+    verifyUrl: 'https://coursera.org/verify/specialization/DL6WORWYKUR6',
+    description: 'Five-course specialization on generative AI fundamentals, effective prompting, responsible AI use and boosting productivity with AI tools.',
+    modules: ['Introduction to AI', 'Prompting', 'Responsible AI', 'AI Productivity'],
+    order: 6,
+  },
+  {
+    title: 'Data Analytics Job Simulation',
+    issuer: 'Deloitte',
+    platform: 'Forage',
+    issueDate: '2026-03-29',
+    credentialId: '',
+    verifyUrl: 'https://drive.google.com/file/d/101aclxju0aURa327ZccXFLW8doXdL_Ew/view?usp=sharing',
+    description: 'Completed practical tasks in data analysis and forensic technology.',
+    modules: ['Data Analysis', 'Forensic Technology'],
+    order: 7,
+  },
+];
+
+async function applyContentUpdate() {
+  const [portfolio] = await portFolioStorage.findAll();
+  if (!portfolio || portfolio.contentVersion === CONTENT_VERSION) {
+    return false;
+  }
+
+  await skillsStorage.replaceAll(skillCategories);
+  await projectsStorage.replaceAll(projects);
+  await experiencesStorage.replaceAll(experiences);
+  await achievementsStorage.replaceAll(achievements);
+  await certificationsStorage.replaceAll(certifications);
+
+  // Keep what the refresh does not cover (profile photo, view count, extra social links).
+  await portFolioStorage.updateById(portfolio._id, {
+    ...portfolioContent,
+    socialLinks: { ...(portfolio.socialLinks || {}), ...portfolioContent.socialLinks },
+    contentVersion: CONTENT_VERSION,
+    lastUpdated: new Date().toISOString(),
+  });
+
+  console.log(`✅ Content refreshed to ${CONTENT_VERSION}`);
+  return true;
+}
+
 async function seedData() {
   console.log('🌱 Seeding data...');
 
@@ -128,229 +516,22 @@ async function seedData() {
     }
   }
 
-  // Seed portfolio info
   if ((await portFolioStorage.findAll()).length === 0) {
     await portFolioStorage.create({
-      fullName: 'Advitiya Ranjan',
-      title: 'Full Stack Developer & Blockchain Engineer',
-      bio: 'Building innovative solutions with React, Node.js, and Blockchain. GATE 2026 qualified with expertise in governance technologies, real-time systems, and emerging tech.',
+      ...portfolioContent,
       profileImage: '/images/profile.jpg',
-      resumeLink: '',
-      socialLinks: {
-        github: 'https://github.com/advitiyaranjan',
-        linkedin: 'https://www.linkedin.com/in/advitiya-ranjan',
-        twitter: 'https://x.com/advitiyaranjan',
-        email_link: 'mailto:advityaranjan1@gmail.com'
-      }
+      viewCount: 0,
+      contentVersion: CONTENT_VERSION,
     });
     console.log('✅ Portfolio data created');
   }
 
-  // Seed skills
-  const skillCategories = [
-      {
-        category: 'Frontend',
-        skills: [
-          { name: 'React', proficiency: 'expert', yearsOfExperience: 3 },
-          { name: 'TypeScript', proficiency: 'advanced', yearsOfExperience: 2 },
-          { name: 'Tailwind CSS', proficiency: 'expert', yearsOfExperience: 2 },
-          { name: 'Next.js', proficiency: 'advanced', yearsOfExperience: 1 },
-          { name: 'Vue.js', proficiency: 'intermediate', yearsOfExperience: 1 },
-          { name: 'Redux', proficiency: 'advanced', yearsOfExperience: 2 }
-        ],
-        order: 1
-      },
-      {
-        category: 'Backend',
-        skills: [
-          { name: 'Node.js', proficiency: 'expert', yearsOfExperience: 3 },
-          { name: 'Express', proficiency: 'expert', yearsOfExperience: 3 },
-          { name: 'MongoDB', proficiency: 'advanced', yearsOfExperience: 2 },
-          { name: 'REST APIs', proficiency: 'expert', yearsOfExperience: 3 },
-          { name: 'PostgreSQL', proficiency: 'advanced', yearsOfExperience: 1 },
-          { name: 'Firebase', proficiency: 'intermediate', yearsOfExperience: 1 }
-        ],
-        order: 2
-      },
-      {
-        category: 'Tools & Platforms',
-        skills: [
-          { name: 'Git', proficiency: 'expert', yearsOfExperience: 3 },
-          { name: 'Docker', proficiency: 'intermediate', yearsOfExperience: 1 },
-          { name: 'AWS', proficiency: 'intermediate', yearsOfExperience: 1 },
-          { name: 'Vercel', proficiency: 'advanced', yearsOfExperience: 2 },
-          { name: 'Figma', proficiency: 'intermediate', yearsOfExperience: 1 },
-          { name: 'CI/CD', proficiency: 'advanced', yearsOfExperience: 1 }
-        ],
-        order: 3
-      },
-      {
-        category: 'Emerging Tech',
-        skills: [
-          { name: 'Blockchain', proficiency: 'advanced', yearsOfExperience: 1 },
-          { name: 'Smart Contracts (Solidity)', proficiency: 'advanced', yearsOfExperience: 1 },
-          { name: 'AI/ML', proficiency: 'intermediate', yearsOfExperience: 1 },
-          { name: 'IoT', proficiency: 'intermediate', yearsOfExperience: 1 },
-          { name: 'Web3', proficiency: 'intermediate', yearsOfExperience: 1 },
-          { name: 'GraphQL', proficiency: 'intermediate', yearsOfExperience: 1 }
-        ],
-        order: 4
-      }
-    ];
-
   await seedCollectionIfEmpty(skillsStorage, skillCategories, 'Skills');
-
-  // Seed projects
-  const projects = [
-      {
-        title: 'Blockchain-Based Governance Research',
-        description: 'Comprehensive research and development of blockchain solutions for government transparency and citizen services.',
-        techStack: ['Blockchain', 'Solidity', 'Smart Contracts', 'DID', 'AI', 'IoT', 'Node.js'],
-        imageUrl: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=500&h=300&fit=crop',
-        githubLink: 'https://github.com/advitiyaranjan',
-        liveLink: 'https://governance-research.example.com',
-        gradient: 'from-blue-500 to-cyan-500',
-        color: 'blue',
-        order: 1
-      },
-      {
-        title: 'Blockchain Voting System',
-        description: 'Secure, transparent voting platform leveraging blockchain technology to ensure tamper-proof elections and enhanced voter transparency.',
-        techStack: ['Blockchain', 'Solidity', 'Ethereum', 'Web3.js', 'React', 'Node.js', 'MongoDB'],
-        imageUrl: 'https://images.unsplash.com/photo-1545670723-196ed0954986?w=500&h=300&fit=crop',
-        githubLink: 'https://github.com/advitiyaranjan/blockchain-voting',
-        liveLink: 'https://voting.example.com',
-        gradient: 'from-purple-500 to-pink-500',
-        color: 'purple',
-        order: 2
-      },
-      {
-        title: 'Campus Connect - Real-Time Student Platform',
-        description: 'Full-stack platform enabling students to share academic resources, find internship opportunities, and connect with peers in real-time.',
-        techStack: ['React', 'Node.js', 'Express', 'MongoDB', 'Socket.io', 'JWT', 'Tailwind CSS'],
-        imageUrl: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=500&h=300&fit=crop',
-        githubLink: 'https://github.com/advitiyaranjan/campus-connect',
-        liveLink: 'https://campus-connect.example.com',
-        gradient: 'from-green-500 to-emerald-500',
-        color: 'green',
-        order: 3
-      },
-      {
-        title: 'AI-Powered Finance Tracker',
-        description: 'Intelligent expense tracking and financial analytics platform with AI-driven insights, budget recommendations, and spending pattern analysis.',
-        techStack: ['React', 'Python', 'Flask', 'TensorFlow', 'MongoDB', 'Chart.js', 'Stripe API'],
-        imageUrl: 'https://images.unsplash.com/photo-1533750349088-75e1b6b6a45f?w=500&h=300&fit=crop',
-        githubLink: 'https://github.com/advitiyaranjan/ai-finance-tracker',
-        liveLink: 'https://ai-finance.example.com',
-        gradient: 'from-yellow-500 to-orange-500',
-        color: 'yellow',
-        order: 4
-      },
-      {
-        title: 'IoT Smart Home Dashboard',
-        description: 'Comprehensive IoT management system for monitoring and controlling smart home devices with real-time data visualization and automation rules.',
-        techStack: ['React', 'Node.js', 'MQTT', 'Arduino', 'MongoDB', 'WebSocket', 'Tailwind CSS'],
-        imageUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500&h=300&fit=crop',
-        githubLink: 'https://github.com/advitiyaranjan/iot-dashboard',
-        liveLink: 'https://iot-dashboard.example.com',
-        gradient: 'from-red-500 to-rose-500',
-        color: 'red',
-        order: 5
-      },
-      {
-        title: 'Personal Portfolio',
-        description: 'Modern, fully serverless portfolio website built with React, Vite, and JSON file storage deployed on Vercel with admin dashboard.',
-        techStack: ['React', 'TypeScript', 'Tailwind CSS', 'Vite', 'Vercel', 'JSON Storage', 'Express'],
-        imageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=500&h=300&fit=crop',
-        githubLink: 'https://github.com/advitiyaranjan/portfolio',
-        liveLink: 'https://portfolio.example.com',
-        gradient: 'from-indigo-500 to-blue-500',
-        color: 'indigo',
-        order: 6
-      }
-    ];
-
   await seedCollectionIfEmpty(projectsStorage, projects, 'Projects');
-
-  // Seed experiences
-  const experiences = [
-      {
-        title: 'Blockchain & Governance Research',
-        company: 'Working Group on Technology for Viksit Bharat',
-        location: 'India - Remote',
-        description: 'Researched and prototyped Blockchain-based governance systems to enhance transparency, security, and efficiency in public service delivery. Designed use-cases for Decentralized Identity (DID) and Smart Contracts in citizen authentication, land records, and subsidy automation. Explored AI-driven policy analytics, IoT-enabled infrastructure monitoring, and integration with Digital Public Goods for scalable, citizen-centric solutions.',
-        startDate: '2025-02-01',
-        endDate: '2025-07-31',
-        isCurrentRole: false,
-        technologies: ['Blockchain', 'Smart Contracts', 'Decentralized Identity (DID)', 'AI Policy Analytics', 'IoT Monitoring', 'Digital Public Goods'],
-        gradient: 'from-blue-500 to-cyan-500',
-        color: 'blue'
-      },
-      {
-        title: 'Data Analyst Intern',
-        company: 'Deloitte',
-        location: 'Australia - Remote',
-        description: 'Completed Data Analytics Job Simulation demonstrating proficiency in problem-solving, data analysis, and advanced analytics. Applied statistical methods and visualization techniques to extract actionable insights from complex datasets. Developed skills in data interpretation, business analytics, and reporting.',
-        startDate: '2026-03-01',
-        endDate: '2026-04-30',
-        isCurrentRole: false,
-        technologies: ['Data Analysis', 'Problem Solving', 'Data Visualization', 'Statistical Analysis', 'Business Analytics', 'SQL', 'Excel'],
-        gradient: 'from-purple-500 to-pink-500',
-        color: 'purple'
-      }
-    ];
-
   await seedCollectionIfEmpty(experiencesStorage, experiences, 'Experiences');
-
-  // Seed achievements
-  const achievements = [
-      {
-        icon: 'Award',
-        title: 'GATE 2026 Qualified',
-        subtitle: 'Computer Science & IT',
-        description: 'Secured AIR 3460 among 211,020 candidates with a GATE Score of 589 and 50.41 marks. Demonstrated exceptional performance in competitive engineering aptitude examination.',
-        details: ['AIR 3460', 'GATE Score: 589/1000', 'Marks: 50.41', '211,020 candidates competed'],
-        gradient: 'from-blue-500 to-cyan-500',
-        color: 'blue',
-        order: 1,
-        link: 'https://gate.iitb.ac.in'
-      },
-      {
-        icon: 'Target',
-        title: 'National Youth Festival (NYF) 2025',
-        subtitle: 'Tech for Viksit Bharat Theme - Finalist',
-        description: 'Selected as a national-level finalist for innovative technology-driven solutions aimed at governance and national development. Recognized for exceptional contributions to tech-driven governance initiatives.',
-        details: ['National-level Finalist', 'Viksit Bharat Initiatives', 'Governance Technology Focus', 'Innovation Recognition'],
-        gradient: 'from-purple-500 to-pink-500',
-        color: 'purple',
-        order: 2,
-        link: 'https://nvy.gov.in'
-      },
-      {
-        icon: 'Users',
-        title: 'SOUL Leadership Conclave',
-        subtitle: 'Youth Delegate & Active Participant',
-        description: 'Invited as an official delegate to participate in policy discussions and leadership networking at the national conclave. Engaged in strategic dialogues on youth empowerment and social impact.',
-        details: ['Official Youth Delegate', 'Policy Discussions', 'Leadership Networking', 'National Conclave'],
-        gradient: 'from-green-500 to-emerald-500',
-        color: 'green',
-        order: 3,
-        link: 'https://www.soulbihar.in'
-      },
-      {
-        icon: 'Zap',
-        title: 'Chairperson – SOUL Bihar & Jharkhand',
-        subtitle: 'Regional Leadership Initiative',
-        description: 'Leading regional initiatives to foster youth leadership, collaboration, and social impact projects. Driving transformative change through youth-centric programs and community engagement.',
-        details: ['Regional Leadership', 'Youth Empowerment', 'Collaboration Programs', 'Social Impact Projects'],
-        gradient: 'from-orange-500 to-red-500',
-        color: 'orange',
-        order: 4,
-        link: 'https://www.soulbihar.in'
-      }
-    ];
-
   await seedCollectionIfEmpty(achievementsStorage, achievements, 'Achievements');
+  await seedCollectionIfEmpty(certificationsStorage, certifications, 'Certifications');
+  await applyContentUpdate();
 
   // Seed case studies
   const caseStudies = [

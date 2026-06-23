@@ -1,49 +1,322 @@
-/* Custom styles for the portfolio */
+/* Custom styles for the portfolio. All colours come from the tokens in theme.css. */
 
-/* Smooth scrolling */
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 5.5rem;
 }
 
-/* Custom scrollbar for webkit browsers */
-::-webkit-scrollbar {
-  width: 10px;
-}
-
-::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.1);
-}
-
-::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #3b82f6, #8b5cf6);
-  border-radius: 5px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #2563eb, #7c3aed);
-}
-
-/* Dark mode scrollbar */
-.dark ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-/* Prevent content shifting when scrollbar appears */
 body {
   overflow-y: scroll;
 }
 
-/* Animation delays for staggered effects */
-.delay-700 {
-  animation-delay: 700ms;
-}
-
-/* Selection color */
 ::selection {
-  background-color: rgba(59, 130, 246, 0.3);
+  background-color: color-mix(in oklab, var(--neon-violet) 28%, transparent);
   color: inherit;
 }
 
-.dark ::selection {
-  background-color: rgba(139, 92, 246, 0.3);
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--neon-cyan), var(--neon-violet));
+  border-radius: 999px;
+  border: 2px solid var(--background);
+}
+
+@layer components {
+  /* Gradient text used for names and key words */
+  .text-gradient {
+    background-image: var(--neon-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Small monospace "HUD" label */
+  .hud-label {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--neon-cyan);
+  }
+
+  /* Solid panel. Deliberately no backdrop-filter: blurring behind dozens of cards is what made scrolling janky. */
+  .panel {
+    position: relative;
+    background: color-mix(in oklab, var(--surface) 88%, transparent);
+    border: 1px solid var(--border);
+    border-radius: 1.25rem;
+    box-shadow: var(--shadow-card);
+  }
+
+  .panel-interactive {
+    transition: border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .panel-interactive:hover {
+    border-color: color-mix(in oklab, var(--neon-violet) 45%, var(--border));
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-card), 0 18px 40px -20px var(--glow);
+  }
+
+  /* Glass: only for a few floating elements (navbar, login card) */
+  .glass {
+    background: var(--nav-bg);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid var(--border);
+  }
+
+  /* Gradient hairline border */
+  .neon-border {
+    border: 1px solid transparent;
+    background:
+      linear-gradient(var(--surface), var(--surface)) padding-box,
+      linear-gradient(135deg, color-mix(in oklab, var(--neon-cyan) 70%, transparent), color-mix(in oklab, var(--neon-violet) 60%, transparent), color-mix(in oklab, var(--neon-pink) 60%, transparent)) border-box;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--foreground);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    transition: border-color 0.2s ease, color 0.2s ease;
+  }
+  .chip:hover {
+    border-color: color-mix(in oklab, var(--neon-cyan) 55%, var(--border));
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.8rem 1.4rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    line-height: 1;
+    transition: transform 0.2s ease, box-shadow 0.25s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    white-space: nowrap;
+  }
+  .btn:active {
+    transform: scale(0.97);
+  }
+  .btn:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 3px;
+  }
+
+  .btn-primary {
+    color: #fff;
+    background-image: linear-gradient(110deg, #0891b2, #6d28d9 60%, #c026d3);
+    background-size: 160% 100%;
+    background-position: 0% 50%;
+    box-shadow: 0 8px 24px -10px var(--glow), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: background-position 0.5s ease, transform 0.2s ease, box-shadow 0.25s ease;
+  }
+  .btn-primary:hover {
+    background-position: 100% 50%;
+    box-shadow: 0 12px 32px -10px var(--glow), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  }
+  .btn-primary:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .btn-outline {
+    color: var(--foreground);
+    background: color-mix(in oklab, var(--surface) 70%, transparent);
+    border: 1px solid var(--border-strong);
+  }
+  .btn-outline:hover {
+    border-color: var(--neon-violet);
+    color: var(--neon-violet);
+  }
+
+  .btn-ghost {
+    color: var(--muted-foreground);
+  }
+  .btn-ghost:hover {
+    color: var(--foreground);
+  }
+
+  .icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: 0.9rem;
+    color: var(--foreground);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    transition: border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  }
+  .icon-btn:hover {
+    color: var(--neon-violet);
+    border-color: color-mix(in oklab, var(--neon-violet) 50%, var(--border));
+    transform: translateY(-2px);
+  }
+  .icon-btn:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  .field {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border-radius: 0.9rem;
+    color: var(--foreground);
+    background: var(--input-background);
+    border: 1px solid var(--input);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .field::placeholder {
+    color: color-mix(in oklab, var(--muted-foreground) 75%, transparent);
+  }
+  .field:focus {
+    outline: none;
+    border-color: var(--neon-violet);
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--neon-violet) 18%, transparent);
+  }
+
+  /* Corner brackets for a HUD frame */
+  .hud-frame::before,
+  .hud-frame::after {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border-color: var(--neon-cyan);
+    pointer-events: none;
+  }
+  .hud-frame::before {
+    top: -1px;
+    left: -1px;
+    border-top: 2px solid;
+    border-left: 2px solid;
+    border-top-left-radius: 1.25rem;
+  }
+  .hud-frame::after {
+    bottom: -1px;
+    right: -1px;
+    border-bottom: 2px solid;
+    border-right: 2px solid;
+    border-bottom-right-radius: 1.25rem;
+  }
+}
+
+/* ---------- Global backdrop (one fixed layer for the whole page) ---------- */
+.backdrop-grid {
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 56px 56px;
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 35%, transparent 80%);
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 35%, transparent 80%);
+}
+
+/* Soft colour fields drawn with radial gradients (cheap) and moved with transforms only (GPU-composited). */
+.aurora {
+  position: absolute;
+  width: 70vmax;
+  height: 70vmax;
+  border-radius: 50%;
+  will-change: transform;
+}
+.aurora-1 {
+  top: -30vmax;
+  left: -20vmax;
+  background: radial-gradient(circle, var(--aurora-1), transparent 62%);
+  animation: aurora-drift-1 28s ease-in-out infinite alternate;
+}
+.aurora-2 {
+  top: -10vmax;
+  right: -30vmax;
+  background: radial-gradient(circle, var(--aurora-2), transparent 62%);
+  animation: aurora-drift-2 34s ease-in-out infinite alternate;
+}
+.aurora-3 {
+  bottom: -40vmax;
+  left: 10vmax;
+  background: radial-gradient(circle, var(--aurora-3), transparent 62%);
+  animation: aurora-drift-1 40s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes aurora-drift-1 {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(8vmax, 6vmax, 0) scale(1.08); }
+}
+@keyframes aurora-drift-2 {
+  from { transform: translate3d(0, 0, 0) scale(1.05); }
+  to { transform: translate3d(-10vmax, 8vmax, 0) scale(0.95); }
+}
+
+/* Rotating conic ring around the profile photo */
+.holo-ring {
+  background: conic-gradient(from 0deg, #22d3ee, #8b5cf6, #ec4899, #22d3ee);
+  animation: spin 9s linear infinite;
+  will-change: transform;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.pulse-dot {
+  position: relative;
+}
+.pulse-dot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: inherit;
+  animation: pulse-ring 2s ease-out infinite;
+}
+@keyframes pulse-ring {
+  from { transform: scale(1); opacity: 0.7; }
+  to { transform: scale(2.6); opacity: 0; }
+}
+
+.float-slow {
+  animation: float 6s ease-in-out infinite;
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+/* Circular reveal when switching theme (View Transitions API, where supported) */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .aurora,
+  .holo-ring,
+  .pulse-dot::after,
+  .float-slow {
+    animation: none !important;
+  }
+  .panel-interactive:hover,
+  .icon-btn:hover {
+    transform: none;
+  }
 }
