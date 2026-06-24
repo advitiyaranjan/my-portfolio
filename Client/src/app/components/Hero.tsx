@@ -3,6 +3,7 @@ import { ArrowRight, ArrowDown, FileText, Github, Linkedin, Mail, Code2, Twitter
 import { useEffect } from 'react';
 import { portfolioAPI } from '@/utils/api';
 import { usePortfolio } from './hooks/usePortfolio';
+import { ScrambleText } from './ScrambleText';
 
 const PORTFOLIO_VIEW_SESSION_KEY = 'portfolioViewTracked';
 
@@ -74,7 +75,8 @@ export function Hero() {
               {...fadeUp(0.18)}
               className="font-display text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05] text-foreground"
             >
-              {firstNames} {lastName && <span className="text-gradient">{lastName}</span>}
+              {firstNames}{' '}
+              {lastName && <ScrambleText text={lastName} className="text-gradient" trigger="mount" delay={450} replayOnHover />}
             </motion.h1>
 
             <motion.p {...fadeUp(0.26)} className="mt-5 font-display text-xl sm:text-2xl font-medium text-foreground/85">
@@ -90,12 +92,12 @@ export function Hero() {
             </motion.p>
 
             <motion.div {...fadeUp(0.42)} className="mt-9 flex flex-wrap gap-3 justify-center lg:justify-start">
-              <button type="button" onClick={() => scrollTo('projects')} className="btn btn-primary group">
+              <button type="button" onClick={() => scrollTo('projects')} className="btn btn-primary group" data-magnetic>
                 View projects
                 <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </button>
               {portfolio.resumeLink && (
-                <a href={portfolio.resumeLink} target="_blank" rel="noopener noreferrer" className="btn btn-outline">
+                <a href={portfolio.resumeLink} target="_blank" rel="noopener noreferrer" className="btn btn-outline" data-magnetic>
                   <FileText className="w-4 h-4" />
                   Resume
                 </a>
@@ -115,6 +117,7 @@ export function Hero() {
                   className="icon-btn"
                   aria-label={label}
                   title={label}
+                  data-magnetic
                 >
                   <Icon className="w-[18px] h-[18px]" />
                 </a>

@@ -1,2389 +1,1257 @@
-import { useState, useEffect, useRef } from 'react';
-import { motion } from 'motion/react';
-import { LogOut, MessageSquare, AlertCircle, Plus, Edit2, Trash2, ExternalLink, ArrowUpRight } from 'lucide-react';
-import { portfolioAPI, messagesAPI, projectAPI, experienceAPI, skillAPI, caseStudyAPI, achievementAPI, certificationAPI } from '@/utils/api';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
+import {
+  LayoutDashboard, User, FileText, FolderGit2, Briefcase, Trophy, BadgeCheck, Layers, Inbox,
+  LogOut, ArrowUpRight, Plus, Pencil, Trash2, X, Check, AlertCircle, Eye, Mail, Save, Loader2,
+} from 'lucide-react';
+import {
+  portfolioAPI, messagesAPI, projectAPI, experienceAPI, skillAPI, achievementAPI, certificationAPI,
+} from '@/utils/api';
 import { ThemeToggle } from '../components/Navbar';
+import { accentFor } from '../components/Projects';
 
-const ADMIN_API_BASE = import.meta.env.VITE_API_URL?.trim() || '';
-const getAdminToken = () => localStorage.getItem('portfolioToken') || localStorage.getItem('authToken') || localStorage.getItem('adminToken');
+/* ------------------------------------------------------------------ */
+/* Shared UI                                                           */
+/* ------------------------------------------------------------------ */
 
-const DEFAULT_ABOUT_HIGHLIGHTS = [
-  {
-    id: 1,
-    title: 'Full Stack Developer',
-    description: 'Expert in React, Node.js, Next.js, and MongoDB for building scalable applications',
-    icon: 'Code',
-  },
-  {
-    id: 2,
-    title: 'Blockchain & Web3',
-    description: 'Proficient in Solidity smart contracts, Web3.js, and decentralized solutions',
-    icon: 'Lightbulb',
-  },
-  {
-    id: 3,
-    title: 'AI & Machine Learning',
-    description: 'Applied experience with TensorFlow, scikit-learn, and OpenAI APIs',
-    icon: 'Users',
-  },
-  {
-    id: 4,
-    title: 'Innovative Problem Solver',
-    description: 'Building cutting-edge solutions for governance, finance, and verification systems',
-    icon: 'Target',
-  },
-];
+type ToastKind = 'success' | 'error';
+interface Toast { id: number; kind: ToastKind; text: string }
 
-interface AdminDashboardProps {
-  onUpdate?: () => void;
-}
+let pushToast: (kind: ToastKind, text: string) => void = () => {};
+const notify = {
+  success: (text: string) => pushToast('success', text),
+  error: (text: string) => pushToast('error', text),
+};
+const errorText = (err: unknown) => (err instanceof Error && err.message ? err.message : 'Something went wrong');
 
-interface DashboardUpdatePayload {
-  portfolio?: any;
-}
-
-export default function AdminDashboard({ onUpdate }: AdminDashboardProps) {
-  const [activeTab, setActiveTab] = useState('overview');
-  const [loading, setLoading] = useState(false);
-  const [stats, setStats] = useState<any>(null);
-  const [portfolio, setPortfolio] = useState<any>(null);
-  const [messages, setMessages] = useState<any[]>([]);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleContentUpdate = async (payload?: DashboardUpdatePayload) => {
-    if (payload?.portfolio) {
-      setPortfolio(payload.portfolio);
-      setStats((currentStats: any) => ({
-        ...currentStats,
-        lastUpdated: payload.portfolio.lastUpdated || payload.portfolio.updatedAt || currentStats?.lastUpdated || null,
-        updatedAt: payload.portfolio.updatedAt || currentStats?.updatedAt || null,
-        viewCount: payload.portfolio.viewCount ?? currentStats?.viewCount ?? 0,
-      }));
-    }
-
-    await loadOverviewData({ skipPortfolio: Boolean(payload?.portfolio) });
-    onUpdate?.();
-  };
-
-  // Load data when activeTab changes
+function Toasts() {
+  const [toasts, setToasts] = useState<Toast[]>([]);
   useEffect(() => {
-    if (activeTab === 'overview') {
-      loadOverviewData();
-    } else if (activeTab === 'messages') {
-      loadMessagesData();
-    }
-  }, [activeTab]);
-
-  const loadOverviewData = async ({ skipPortfolio = false }: { skipPortfolio?: boolean } = {}) => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Try to load portfolio
-      if (!skipPortfolio) {
-        try {
-          const result = await portfolioAPI.getPortfolio();
-          setPortfolio(result?.data || result);
-        } catch (err) {
-          console.warn('Failed to load portfolio:', err);
-        }
-      }
-
-      // Try to load stats
-      try {
-        const result = await portfolioAPI.getStats();
-        setStats(result?.data || result?.stats || result);
-      } catch (err) {
-        console.warn('Failed to load stats:', err);
-      }
-
-      // Try to load messages
-      try {
-        const result = await messagesAPI.getAllMessages(1, 5);
-        setMessages(result?.data || []);
-      } catch (err) {
-        console.warn('Failed to load messages:', err);
-      }
-    } catch (err) {
-      console.error('Dashboard load error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadMessagesData = async () => {
-    try {
-      setLoading(true);
-      const result = await messagesAPI.getAllMessages(1, 50);
-      setMessages(result?.data || []);
-    } catch (err) {
-      console.error('Failed to load messages:', err);
-      setError('Failed to load messages');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('portfolioToken');
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('adminToken');
-    window.location.href = '/login';
-  };
-
+    pushToast = (kind, text) => {
+      const id = Date.now() + Math.random();
+      setToasts((list) => [...list, { id, kind, text }]);
+      setTimeout(() => setToasts((list) => list.filter((t) => t.id !== id)), 3500);
+    };
+    return () => { pushToast = () => {}; };
+  }, []);
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Header */}
-      <div className="bg-surface border-b border-border p-6">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-            <p className="text-muted-foreground mt-1">Manage your portfolio content</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <a href="/" className="hidden sm:flex items-center gap-1.5 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-              View site
-              <ArrowUpRight className="w-4 h-4" />
-            </a>
-            <ThemeToggle />
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg transition-colors"
-            >
-              <LogOut className="w-5 h-5" />
-              Logout
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Navigation Tabs */}
-      <div className="bg-surface border-b border-border sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto flex overflow-x-auto">
-          {[
-            { id: 'overview', label: 'Overview', icon: '📊' },
-            { id: 'profile', label: 'Profile', icon: '👤' },
-            { id: 'about', label: 'About', icon: 'ℹ️' },
-            { id: 'stats', label: 'Statistics', icon: '📈' },
-            { id: 'projects', label: 'Projects', icon: '📁' },
-            { id: 'achievements', label: 'Achievements', icon: '🏆' },
-            { id: 'certifications', label: 'Certifications', icon: '📜' },
-            { id: 'experience', label: 'Experience', icon: '💼' },
-            { id: 'skills', label: 'Skills', icon: '⚙️' },
-            { id: 'messages', label: 'Messages', icon: '💬' },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-4 border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${
-                activeTab === tab.id
-                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <span>{tab.icon}</span>
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto p-6">
-        {error && (
-          <div className="bg-red-500/10 border border-red-500 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg mb-6 flex items-center gap-2">
-            <AlertCircle className="w-5 h-5" />
-            {error}
-          </div>
-        )}
-
-        {loading && (
-          <div className="bg-yellow-500/10 border border-yellow-600 text-yellow-800 dark:text-yellow-200 px-4 py-3 rounded-lg mb-6 flex items-center gap-2">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-400"></div>
-            Loading data...
-          </div>
-        )}
-
-        {activeTab === 'overview' && <OverviewSection portfolio={portfolio} stats={stats} messages={messages} />}
-        {activeTab === 'profile' && <ProfileSection portfolio={portfolio} onUpdate={handleContentUpdate} />}
-        {activeTab === 'about' && <AboutSection portfolio={portfolio} onUpdate={handleContentUpdate} />}
-        {activeTab === 'stats' && <StatsSection portfolio={portfolio} onUpdate={handleContentUpdate} />}
-        {activeTab === 'projects' && <ProjectsSection onUpdate={handleContentUpdate} />}
-        {activeTab === 'achievements' && <AchievementsSection onUpdate={handleContentUpdate} />}
-        {activeTab === 'certifications' && <CertificationsSection />}
-        {activeTab === 'experience' && <ExperienceSection onUpdate={handleContentUpdate} />}
-        {activeTab === 'skills' && <SkillsSection onUpdate={handleContentUpdate} />}
-        {activeTab === 'messages' && <MessagesSection messages={messages} onUpdate={handleContentUpdate} />}
-      </div>
+    <div className="fixed top-20 right-5 z-[60] flex flex-col gap-2 w-[min(360px,calc(100vw-2.5rem))]" aria-live="polite">
+      <AnimatePresence>
+        {toasts.map((t) => (
+          <motion.div
+            key={t.id}
+            initial={{ opacity: 0, y: 12, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, x: 20 }}
+            className={`panel flex items-start gap-3 p-3.5 text-sm ${t.kind === 'success' ? 'border-emerald-500/40' : 'border-red-500/40'}`}
+          >
+            {t.kind === 'success'
+              ? <Check className="w-4 h-4 mt-0.5 shrink-0 text-emerald-500" />
+              : <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-red-500" />}
+            <span className="text-foreground">{t.text}</span>
+          </motion.div>
+        ))}
+      </AnimatePresence>
     </div>
   );
 }
 
-// Overview Section
-function OverviewSection({ portfolio, stats, messages }: any) {
-  const getLastUpdated = () => {
-    if (!stats?.lastUpdated && !stats?.updatedAt) return 'N/A';
-    try {
-      const date = new Date(stats.lastUpdated || stats.updatedAt);
-      return isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString();
-    } catch {
-      return 'N/A';
-    }
-  };
-
+function PageHeader({ title, subtitle, action }: { title: string; subtitle?: string; action?: React.ReactNode }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="space-y-6"
-    >
-      {/* Stats Grid */}
-      <div className="grid md:grid-cols-3 gap-6">
-        <div className="bg-surface border border-border rounded-lg p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-muted-foreground text-sm">Portfolio Views</p>
-              <p className="text-2xl font-bold mt-2">{stats?.viewCount || 0}</p>
-            </div>
-            <span className="text-4xl">👁️</span>
-          </div>
-        </div>
-        <div className="bg-surface border border-border rounded-lg p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-muted-foreground text-sm">Total Messages</p>
-              <p className="text-2xl font-bold mt-2">{(messages && messages.length) || 0}</p>
-            </div>
-            <span className="text-4xl">💬</span>
-          </div>
-        </div>
-        <div className="bg-surface border border-border rounded-lg p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-muted-foreground text-sm">Last Updated</p>
-              <p className="text-2xl font-bold mt-2">{getLastUpdated()}</p>
-            </div>
-            <span className="text-4xl">🔄</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Messages */}
-      <div className="bg-surface border border-border rounded-lg p-6">
-        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-          <MessageSquare className="w-5 h-5" />
-          Recent Messages
-        </h3>
-        <div className="space-y-2">
-          {(messages && messages.length > 0) ? (
-            messages.slice(0, 5).map((msg: any) => (
-              <div key={msg._id} className="bg-surface-2 p-3 rounded flex items-center justify-between">
-                <div>
-                  <p className="font-semibold">{msg.name || 'Unknown'}</p>
-                  <p className="text-muted-foreground text-sm">{(msg.message || '').substring(0, 50)}...</p>
-                </div>
-                <span className={`px-3 py-1 rounded text-xs ${msg.isRead ? 'bg-surface-3' : 'bg-blue-600 text-white'}`}>
-                  {msg.isRead ? 'Read' : 'Unread'}
-                </span>
-              </div>
-            ))
-          ) : (
-            <p className="text-muted-foreground text-sm">No messages yet or loading...</p>
-          )}
-        </div>
-      </div>
-
-      {/* Portfolio Info */}
-      {portfolio && (
-        <div className="bg-surface border border-border rounded-lg p-6">
-          <h3 className="text-xl font-bold mb-4">Portfolio Information</h3>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <p className="text-muted-foreground text-sm">Name</p>
-              <p className="text-foreground font-semibold">{portfolio.fullName || 'Not set'}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground text-sm">Title</p>
-              <p className="text-foreground font-semibold">{portfolio.title || 'Not set'}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground text-sm">Email</p>
-              <p className="text-foreground font-semibold">{portfolio.email || 'Not set'}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground text-sm">Location</p>
-              <p className="text-foreground font-semibold">{portfolio.location || 'Not set'}</p>
-            </div>
-          </div>
-        </div>
-      )}
-    </motion.div>
-  );
-}
-
-// About Section
-function AboutSection({ portfolio, onUpdate }: any) {
-  const [aboutDescription, setAboutDescription] = useState(
-    portfolio?.aboutDescription || 
-    'I\'ve successfully worked on diverse projects from governance technologies with the Government of India\'s Viksit Bharat initiative to blockchain-based voting systems and AI-powered finance trackers. My focus is on creating scalable, secure, and user-centric solutions that combine cutting-edge technology with practical utility.\n\nWith GATE 2026 qualification (AIR 3460) and active involvement in leadership initiatives like SOUL Bihar & Jharkhand, I\'m committed to continuous learning and making a meaningful impact through technology and innovation.'
-  );
-  const [isLoadingDescription, setIsLoadingDescription] = useState(false);
-  const [descriptionMessage, setDescriptionMessage] = useState('');
-  const [aboutData, setAboutData] = useState<any[]>(portfolio?.aboutHighlights || DEFAULT_ABOUT_HIGHLIGHTS);
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [formData, setFormData] = useState({ title: '', description: '', icon: '' });
-
-  useEffect(() => {
-    if (portfolio?.aboutDescription) {
-      setAboutDescription(portfolio.aboutDescription);
-    }
-    if (Array.isArray(portfolio?.aboutHighlights) && portfolio.aboutHighlights.length > 0) {
-      setAboutData(portfolio.aboutHighlights);
-      return;
-    }
-    setAboutData(DEFAULT_ABOUT_HIGHLIGHTS);
-  }, [portfolio]);
-
-  const persistAboutHighlights = async (nextHighlights: any[]) => {
-    await portfolioAPI.updatePortfolio({ aboutHighlights: nextHighlights });
-    setAboutData(nextHighlights);
-    if (onUpdate) {
-      await onUpdate();
-    }
-  };
-
-  const handleSaveDescription = async () => {
-    setIsLoadingDescription(true);
-    setDescriptionMessage('');
-    try {
-      const token = getAdminToken();
-      if (!token) {
-        setDescriptionMessage('❌ Authentication required');
-        return;
-      }
-
-      const response = await fetch(`${ADMIN_API_BASE}/api/portfolio`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ aboutDescription }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update about description');
-      }
-
-      setDescriptionMessage('✅ About description updated successfully!');
-      if (onUpdate) {
-        await onUpdate();
-      }
-      setTimeout(() => setDescriptionMessage(''), 3000);
-    } catch (error: any) {
-      setDescriptionMessage(`❌ Error: ${error.message}`);
-    } finally {
-      setIsLoadingDescription(false);
-    }
-  };
-
-  const handleAddNew = () => {
-    setEditingId(null);
-    setFormData({ title: '', description: '', icon: '' });
-    setShowForm(true);
-  };
-
-  const handleEdit = (item: any) => {
-    setEditingId(item.id);
-    setFormData({ title: item.title, description: item.description, icon: item.icon });
-    setShowForm(true);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const nextHighlights = editingId
-      ? aboutData.map(item => item.id === editingId ? { ...item, ...formData } : item)
-      : [...aboutData, { id: Date.now(), ...formData }];
-
-    try {
-      await persistAboutHighlights(nextHighlights);
-      setShowForm(false);
-      setEditingId(null);
-      setFormData({ title: '', description: '', icon: '' });
-    } catch (error) {
-      console.error('Failed to save about highlight:', error);
-      alert('Failed to save highlight');
-    }
-  };
-
-  const handleDelete = async (id: number) => {
-    if (window.confirm('Are you sure you want to delete this highlight?')) {
-      try {
-        await persistAboutHighlights(aboutData.filter(item => item.id !== id));
-      } catch (error) {
-        console.error('Failed to delete about highlight:', error);
-        alert('Failed to delete highlight');
-      }
-    }
-  };
-
-  return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-      {/* About Description Editor */}
-      <div className="bg-surface border border-border rounded-lg p-6">
-        <h2 className="text-2xl font-bold mb-4">Edit About Description</h2>
-        <p className="text-muted-foreground text-sm mb-4">This text appears in the main About section of your portfolio.</p>
-        
-        <textarea
-          value={aboutDescription}
-          onChange={(e) => setAboutDescription(e.target.value)}
-          rows={8}
-          className="w-full px-4 py-3 bg-surface-2 border border-border-strong rounded text-foreground focus:border-blue-500 focus:outline-none resize-vertical"
-          placeholder="Enter your about description..."
-        />
-
-        {descriptionMessage && (
-          <div className={`mt-3 px-4 py-2 rounded text-sm ${descriptionMessage.includes('✅') ? 'bg-green-500/10 text-green-700 dark:text-green-400' : 'bg-red-500/10 text-red-700 dark:text-red-400'}`}>
-            {descriptionMessage}
-          </div>
-        )}
-
-        <div className="mt-4 flex justify-end">
-          <button
-            onClick={handleSaveDescription}
-            disabled={isLoadingDescription}
-            className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-foreground rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoadingDescription ? 'Saving...' : 'Save Description'}
-          </button>
-        </div>
-      </div>
-
-      {/* Highlights Manager */}
+    <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-7">
       <div>
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold">About Me Highlights</h2>
-          <button
-            onClick={handleAddNew}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            Add Highlight
-          </button>
-        </div>
-
-        <div className="bg-blue-500/5 border border-blue-700/30 rounded-lg p-4 mb-6">
-          <p className="text-sm text-foreground/80">Edit the highlights that appear in your About Me section. Each highlight has a title, description, and icon.</p>
-        </div>
-
-        {showForm && (
-          <form onSubmit={handleSubmit} className="bg-surface border border-border rounded-lg p-6 space-y-4 mb-6">
-            <input
-              type="text"
-              placeholder="Highlight Title"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
-              required
-            />
-            <textarea
-              placeholder="Highlight Description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              rows={3}
-              className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
-              required
-            />
-            <input
-              type="text"
-              placeholder="Icon Name (e.g., Code, Lightbulb, Users, Target)"
-              value={formData.icon}
-              onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-              className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
-            />
-            <div className="flex gap-3">
-              <button
-                type="submit"
-                className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition-colors"
-              >
-                {editingId ? 'Update' : 'Create'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="px-4 py-2 bg-surface-3 hover:bg-surface-3 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        )}
-
-        <div className="grid md:grid-cols-2 gap-6">
-          {aboutData.map((item) => (
-            <div key={item.id} className="bg-surface border border-border rounded-lg p-6 hover:border-border-strong transition-colors">
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <h3 className="text-lg font-bold text-foreground mb-1">{item.title}</h3>
-                  <p className="text-muted-foreground text-sm">{item.description}</p>
-                </div>
-                <span className="text-2xl ml-2">{item.icon}</span>
-              </div>
-              <div className="flex gap-2 pt-3 border-t border-border">
-                <button
-                  onClick={() => handleEdit(item)}
-                  className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white hover:bg-blue-700 rounded text-sm transition-colors"
-                >
-                  <Edit2 className="w-4 h-4" />
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(item.id)}
-                  className="flex items-center gap-1 px-3 py-1 bg-red-600 text-white hover:bg-red-700 rounded text-sm transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Delete
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+        <h1 className="font-display text-3xl font-bold tracking-tight text-foreground">{title}</h1>
+        {subtitle && <p className="mt-1.5 text-muted-foreground">{subtitle}</p>}
       </div>
-    </motion.div>
+      {action}
+    </div>
   );
 }
 
-// Profile Section
-function ProfileSection({ portfolio, onUpdate }: any) {
-  const [formData, setFormData] = useState(portfolio || {
-    fullName: '',
-    title: '',
-    bio: '',
-    email: '',
-    phone: '',
-    location: '',
-    resumeLink: '',
-    socialLinks: { github: '', linkedin: '', twitter: '' },
-    profileImage: null
-  });
-  const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('personal');
-
-  useEffect(() => {
-    if (portfolio) {
-      setFormData({
-        fullName: portfolio.fullName || '',
-        title: portfolio.title || '',
-        bio: portfolio.bio || '',
-        email: portfolio.email || '',
-        phone: portfolio.phone || '',
-        location: portfolio.location || '',
-        resumeLink: portfolio.resumeLink || '',
-        socialLinks: {
-          github: portfolio.socialLinks?.github || '',
-          linkedin: portfolio.socialLinks?.linkedin || '',
-          twitter: portfolio.socialLinks?.twitter || '',
-        },
-        profileImage: portfolio.profileImage || null
-      });
-    }
-  }, [portfolio]);
-
-  const handleInputChange = (field: string, value: string) => {
-    setFormData({ ...formData, [field]: value });
-  };
-
-  const handleSocialUpdate = (platform: string, value: string) => {
-    setFormData({
-      ...formData,
-      socialLinks: { ...formData.socialLinks, [platform]: value },
-    });
-  };
-
-  const handleProfileImageUpload = async (e: any) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      setLoading(true);
-      await portfolioAPI.uploadProfileImage(file);
-      if (onUpdate) onUpdate();
-      alert('Image uploaded successfully!');
-    } catch (err) {
-      console.error('Upload failed:', err);
-      alert('Failed to upload image');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      setLoading(true);
-      const response = await portfolioAPI.updatePortfolio(formData);
-      const updatedPortfolio = response?.data || formData;
-      setFormData({
-        fullName: updatedPortfolio.fullName || '',
-        title: updatedPortfolio.title || '',
-        bio: updatedPortfolio.bio || '',
-        email: updatedPortfolio.email || '',
-        phone: updatedPortfolio.phone || '',
-        location: updatedPortfolio.location || '',
-        resumeLink: updatedPortfolio.resumeLink || '',
-        socialLinks: {
-          github: updatedPortfolio.socialLinks?.github || '',
-          linkedin: updatedPortfolio.socialLinks?.linkedin || '',
-          twitter: updatedPortfolio.socialLinks?.twitter || '',
-        },
-        profileImage: updatedPortfolio.profileImage || null
-      });
-      if (onUpdate) await onUpdate({ portfolio: updatedPortfolio });
-      alert('Profile updated successfully!');
-    } catch (err) {
-      console.error('Update failed:', err);
-      alert('Failed to update profile');
-    } finally {
-      setLoading(false);
-    }
-  };
-
+function Label({ children, hint }: { children: React.ReactNode; hint?: string }) {
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-      <h2 className="text-2xl font-bold">Edit Profile</h2>
-
-      {/* Profile Header with Image */}
-      <div className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 border border-blue-700/30 rounded-2xl p-8">
-        <div className="flex flex-col md:flex-row items-center gap-8">
-          <div className="relative">
-            <img
-              src={formData.profileImage || '/images/profile.jpg'}
-              alt="Profile"
-              className="w-40 h-40 rounded-full object-cover border-4 border-blue-500 shadow-xl"
-            />
-            <label className="absolute bottom-0 right-0 p-2 bg-blue-600 text-white hover:bg-blue-700 rounded-full cursor-pointer transition-colors shadow-lg">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleProfileImageUpload}
-                disabled={loading}
-                className="hidden"
-              />
-              <span className="text-foreground text-xl">📸</span>
-            </label>
-          </div>
-
-          <div className="flex-1 text-center md:text-left">
-            <h1 className="text-3xl font-bold text-foreground mb-2">{formData.fullName || 'Your Name'}</h1>
-            <p className="text-blue-600 dark:text-blue-400 text-lg mb-2">{formData.title || 'Your Title'}</p>
-            <p className="text-foreground/80 mb-4">{formData.location || 'Location'}</p>
-            <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-              {formData.email && (
-                <span className="px-3 py-1 bg-blue-600/20 text-blue-700 dark:text-blue-300 text-sm rounded-full border border-blue-500/30">
-                  ✉️ {formData.email}
-                </span>
-              )}
-              {formData.phone && (
-                <span className="px-3 py-1 bg-purple-600/20 text-purple-700 dark:text-purple-300 text-sm rounded-full border border-purple-500/30">
-                  ☎️ {formData.phone}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Tab Navigation */}
-      <div className="flex gap-2 border-b border-border">
-        {[
-          { id: 'personal', label: '👤 Personal Info' },
-          { id: 'contact', label: '📞 Contact' },
-          { id: 'social', label: '🔗 Social Links' },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-3 font-medium border-b-2 transition-all ${
-              activeTab === tab.id
-                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Tab Content */}
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Personal Info Tab */}
-        {activeTab === 'personal' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium mb-2 text-foreground/80">Full Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.fullName}
-                  onChange={(e) => handleInputChange('fullName', e.target.value)}
-                  className="w-full bg-surface-2 border border-border-strong rounded-lg px-4 py-3 text-foreground focus:outline-none focus:border-blue-500 transition-colors"
-                  placeholder="Your full name"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2 text-foreground/80">Professional Title *</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.title}
-                  onChange={(e) => handleInputChange('title', e.target.value)}
-                  className="w-full bg-surface-2 border border-border-strong rounded-lg px-4 py-3 text-foreground focus:outline-none focus:border-blue-500 transition-colors"
-                  placeholder="e.g., Full Stack Developer"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2 text-foreground/80">Bio</label>
-              <textarea
-                value={formData.bio}
-                onChange={(e) => handleInputChange('bio', e.target.value)}
-                rows={5}
-                className="w-full bg-surface-2 border border-border-strong rounded-lg px-4 py-3 text-foreground focus:outline-none focus:border-blue-500 transition-colors"
-                placeholder="Tell us about yourself, your experience, and interests..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2 text-foreground/80">Resume Link (Google Drive)</label>
-              <input
-                type="url"
-                value={formData.resumeLink}
-                onChange={(e) => handleInputChange('resumeLink', e.target.value)}
-                className="w-full bg-surface-2 border border-border-strong rounded-lg px-4 py-3 text-foreground focus:outline-none focus:border-blue-500 transition-colors"
-                placeholder="https://drive.google.com/..."
-              />
-            </div>
-          </motion.div>
-        )}
-
-        {/* Contact Tab */}
-        {activeTab === 'contact' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium mb-2 text-foreground/80">Email *</label>
-                <input
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  className="w-full bg-surface-2 border border-border-strong rounded-lg px-4 py-3 text-foreground focus:outline-none focus:border-blue-500 transition-colors"
-                  placeholder="your.email@example.com"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2 text-foreground/80">Phone</label>
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                  className="w-full bg-surface-2 border border-border-strong rounded-lg px-4 py-3 text-foreground focus:outline-none focus:border-blue-500 transition-colors"
-                  placeholder="+1 (555) 123-4567"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2 text-foreground/80">Location</label>
-              <input
-                type="text"
-                value={formData.location}
-                onChange={(e) => handleInputChange('location', e.target.value)}
-                className="w-full bg-surface-2 border border-border-strong rounded-lg px-4 py-3 text-foreground focus:outline-none focus:border-blue-500 transition-colors"
-                placeholder="City, Country"
-              />
-            </div>
-          </motion.div>
-        )}
-
-        {/* Social Links Tab */}
-        {activeTab === 'social' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-            <div className="bg-blue-500/5 border border-blue-700/30 rounded-lg p-4 mb-4">
-              <p className="text-sm text-foreground/80">Add links to your social media profiles. These will be displayed on your portfolio.</p>
-            </div>
-
-            {[
-              { name: 'github', icon: '🐙', placeholder: 'https://github.com/username' },
-              { name: 'linkedin', icon: '💼', placeholder: 'https://linkedin.com/in/username' },
-              { name: 'twitter', icon: '𝕏', placeholder: 'https://twitter.com/username' },
-            ].map(({ name, icon, placeholder }) => (
-              <div key={name}>
-                <label className="block text-sm font-medium mb-2 text-foreground/80">
-                  {icon} {name.charAt(0).toUpperCase() + name.slice(1)}
-                </label>
-                <input
-                  type="url"
-                  value={formData.socialLinks?.[name] || ''}
-                  onChange={(e) => handleSocialUpdate(name, e.target.value)}
-                  className="w-full bg-surface-2 border border-border-strong rounded-lg px-4 py-3 text-foreground focus:outline-none focus:border-blue-500 transition-colors"
-                  placeholder={placeholder}
-                />
-              </div>
-            ))}
-          </motion.div>
-        )}
-
-        {/* Save Button */}
-        <div className="flex gap-3 pt-4 border-t border-border">
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:from-gray-600 disabled:to-gray-700 text-foreground font-semibold rounded-lg transition-all shadow-lg"
-          >
-            {loading ? '💾 Saving...' : '💾 Save Changes'}
-          </button>
-        </div>
-      </form>
-    </motion.div>
+    <span className="flex items-baseline justify-between gap-2 mb-1.5">
+      <span className="text-sm font-medium text-foreground">{children}</span>
+      {hint && <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">{hint}</span>}
+    </span>
   );
 }
 
-// Messages Section
-function MessagesSection({ messages, onUpdate }: any) {
-  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+function Spinner() {
+  return <Loader2 className="w-4 h-4 animate-spin" />;
+}
 
-  const getFormattedDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      return isNaN(date.getTime()) ? 'Invalid date' : date.toLocaleString();
-    } catch {
-      return 'Invalid date';
-    }
+function EmptyState({ text }: { text: string }) {
+  return <div className="panel p-10 text-center text-muted-foreground">{text}</div>;
+}
+
+/* ------------------------------------------------------------------ */
+/* Generic collection manager                                          */
+/* ------------------------------------------------------------------ */
+
+const GRADIENTS = [
+  { value: 'from-blue-500 to-cyan-500', label: 'Blue / Cyan' },
+  { value: 'from-purple-500 to-pink-500', label: 'Purple / Pink' },
+  { value: 'from-green-500 to-emerald-500', label: 'Green / Emerald' },
+  { value: 'from-orange-500 to-red-500', label: 'Orange / Red' },
+  { value: 'from-yellow-500 to-orange-500', label: 'Yellow / Orange' },
+  { value: 'from-indigo-500 to-blue-500', label: 'Indigo / Blue' },
+  { value: 'from-red-500 to-rose-500', label: 'Red / Rose' },
+];
+
+type FieldType = 'text' | 'textarea' | 'date' | 'number' | 'checkbox' | 'select' | 'list' | 'lines' | 'link';
+
+interface FieldDef {
+  name: string;
+  label: string;
+  type: FieldType;
+  required?: boolean;
+  placeholder?: string;
+  hint?: string;
+  options?: { value: string; label: string }[];
+  full?: boolean;
+  disabledWhen?: (values: Record<string, any>) => boolean;
+}
+
+interface CollectionConfig {
+  title: string;
+  subtitle: string;
+  singular: string;
+  api: {
+    list: () => Promise<any>;
+    create: (data: any) => Promise<any>;
+    update: (id: string, data: any) => Promise<any>;
+    remove: (id: string) => Promise<any>;
+  };
+  fields: FieldDef[];
+  defaults: Record<string, any>;
+  sort?: (a: any, b: any) => number;
+  /** Convert a stored record to form values (optional). */
+  toForm?: (record: any) => Record<string, any>;
+  /** Convert form values into the payload sent to the API (optional). */
+  toPayload?: (values: Record<string, any>, original?: any) => Record<string, any>;
+  renderCard: (record: any) => React.ReactNode;
+  columns?: 1 | 2;
+}
+
+// Stored value -> editable string for list/lines fields, and back.
+function recordToForm(fields: FieldDef[], record: any, defaults: Record<string, any>) {
+  const values: Record<string, any> = { ...defaults };
+  for (const f of fields) {
+    const v = record?.[f.name];
+    if (f.type === 'list') values[f.name] = Array.isArray(v) ? v.join(', ') : v || '';
+    else if (f.type === 'lines') values[f.name] = Array.isArray(v) ? v.join('\n') : v || '';
+    else if (f.type === 'date') values[f.name] = typeof v === 'string' ? v.slice(0, 10) : '';
+    else if (f.type === 'checkbox') values[f.name] = Boolean(v);
+    else if (v !== undefined && v !== null) values[f.name] = v;
+  }
+  return values;
+}
+
+function formToPayload(fields: FieldDef[], values: Record<string, any>) {
+  const payload: Record<string, any> = {};
+  for (const f of fields) {
+    const v = values[f.name];
+    if (f.type === 'list') payload[f.name] = String(v || '').split(',').map((s) => s.trim()).filter(Boolean);
+    else if (f.type === 'lines') payload[f.name] = String(v || '').split('\n').map((s) => s.trim()).filter(Boolean);
+    else if (f.type === 'number') payload[f.name] = Number(v) || 0;
+    else if (f.type === 'checkbox') payload[f.name] = Boolean(v);
+    else payload[f.name] = typeof v === 'string' ? v.trim() : v;
+  }
+  return payload;
+}
+
+function FieldInput({ field, values, setValue }: { field: FieldDef; values: Record<string, any>; setValue: (n: string, v: any) => void }) {
+  const value = values[field.name];
+  const disabled = field.disabledWhen?.(values);
+  const common = {
+    id: `f-${field.name}`,
+    required: field.required,
+    placeholder: field.placeholder,
+    disabled,
+    className: 'field disabled:opacity-50',
   };
 
-  const isMessageRead = (message: any) => Boolean(message?.isRead ?? message?.read);
-
-  const handleMarkAsRead = async (id: string) => {
-    try {
-      setActionLoadingId(id);
-      await messagesAPI.markAsRead(id);
-      if (onUpdate) {
-        await onUpdate();
-      }
-    } catch (error) {
-      console.error('Failed to mark message as read:', error);
-      alert('Failed to mark message as read');
-    } finally {
-      setActionLoadingId(null);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this message?')) {
-      return;
-    }
-
-    try {
-      setActionLoadingId(id);
-      await messagesAPI.deleteMessage(id);
-      if (onUpdate) {
-        await onUpdate();
-      }
-    } catch (error) {
-      console.error('Failed to delete message:', error);
-      alert('Failed to delete message');
-    } finally {
-      setActionLoadingId(null);
-    }
-  };
+  if (field.type === 'checkbox') {
+    return (
+      <label className="flex items-center gap-3 cursor-pointer select-none h-full pt-6">
+        <input
+          type="checkbox"
+          checked={Boolean(value)}
+          onChange={(e) => setValue(field.name, e.target.checked)}
+          className="w-4 h-4 accent-violet-600"
+        />
+        <span className="text-sm font-medium text-foreground">{field.label}</span>
+      </label>
+    );
+  }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="space-y-4"
-    >
-      {(messages && messages.length > 0) ? (
-        messages.map((msg: any) => (
-          <div key={msg._id} className="bg-surface border border-border rounded-lg p-6">
-            <div className="flex justify-between items-start mb-3">
-              <div>
-                <h4 className="font-bold text-lg">{msg.name || 'Unknown'}</h4>
-                <p className="text-muted-foreground text-sm">{msg.email || 'No email'}</p>
-              </div>
-              <span className={`px-3 py-1 rounded text-xs ${isMessageRead(msg) ? 'bg-surface-3' : 'bg-blue-600 text-white'}`}>
-                {isMessageRead(msg) ? 'Read' : 'Unread'}
-              </span>
-            </div>
-            <p className="text-foreground/80 mb-3">{msg.message || 'No message content'}</p>
-            <div className="flex items-center justify-between gap-4">
-              <p className="text-xs text-muted-foreground">{getFormattedDate(msg.createdAt)}</p>
-              <div className="flex gap-2">
-                {!isMessageRead(msg) && (
-                  <button
-                    onClick={() => handleMarkAsRead(msg._id)}
-                    disabled={actionLoadingId === msg._id}
-                    className="px-3 py-1 bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-800/60 disabled:cursor-not-allowed rounded text-sm transition-colors"
-                  >
-                    {actionLoadingId === msg._id ? 'Working...' : 'Mark Read'}
-                  </button>
-                )}
-                <button
-                  onClick={() => handleDelete(msg._id)}
-                  disabled={actionLoadingId === msg._id}
-                  className="flex items-center gap-1 px-3 py-1 bg-red-600 text-white hover:bg-red-700 disabled:bg-red-800/60 disabled:cursor-not-allowed rounded text-sm transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  {actionLoadingId === msg._id ? 'Working...' : 'Delete'}
-                </button>
-              </div>
-            </div>
-          </div>
-        ))
+    <label htmlFor={common.id} className="block">
+      <Label hint={field.hint}>{field.label}{field.required && <span className="text-red-500"> *</span>}</Label>
+      {field.type === 'textarea' || field.type === 'lines' ? (
+        <textarea {...common} rows={field.type === 'lines' ? 4 : 3} value={value ?? ''} onChange={(e) => setValue(field.name, e.target.value)} className={`${common.className} resize-y`} />
+      ) : field.type === 'select' ? (
+        <select {...common} value={value ?? ''} onChange={(e) => setValue(field.name, e.target.value)}>
+          {field.options?.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
       ) : (
-        <div className="bg-surface border border-border rounded-lg p-6 text-center">
-          <p className="text-muted-foreground">No messages yet</p>
-        </div>
+        <input
+          {...common}
+          // "link" accepts full URLs and site paths like /resume.pdf, so no browser URL validation.
+          type={field.type === 'date' ? 'date' : field.type === 'number' ? 'number' : 'text'}
+          inputMode={field.type === 'link' ? 'url' : undefined}
+          value={disabled && field.type === 'date' ? '' : value ?? ''}
+          onChange={(e) => setValue(field.name, e.target.value)}
+        />
       )}
-    </motion.div>
+    </label>
   );
 }
 
-// Projects Section
-function ProjectsSection({ onUpdate }: any) {
-  const [projects, setProjects] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+function EditorDrawer({
+  open, title, fields, initial, onClose, onSubmit,
+}: {
+  open: boolean;
+  title: string;
+  fields: FieldDef[];
+  initial: Record<string, any>;
+  onClose: () => void;
+  onSubmit: (values: Record<string, any>) => Promise<void>;
+}) {
+  const [values, setValues] = useState(initial);
   const [saving, setSaving] = useState(false);
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    imageUrl: '',
-    techStack: '',
-    liveLink: '',
-    githubLink: '',
-  });
+
+  useEffect(() => { if (open) setValues(initial); }, [open, initial]);
 
   useEffect(() => {
-    loadProjects();
-  }, []);
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
 
-  const loadProjects = async () => {
-    try {
-      setLoading(true);
-      const response = await projectAPI.getAllProjects();
-      setProjects(response?.data || []);
-    } catch (err) {
-      console.error('Failed to load projects:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const setValue = (name: string, v: any) => setValues((cur) => ({ ...cur, [name]: v }));
 
-  const handleAddNew = () => {
-    setEditingId(null);
-    setFormData({
-      title: '',
-      description: '',
-      imageUrl: '',
-      techStack: '',
-      liveLink: '',
-      githubLink: '',
-    });
-    setShowForm(true);
-  };
-
-  const handleEdit = (project: any) => {
-    setEditingId(project._id);
-    setFormData({
-      title: project.title,
-      description: project.description,
-      imageUrl: project.imageUrl,
-      techStack: project.techStack?.join(', ') || '',
-      liveLink: project.liveLink,
-      githubLink: project.githubLink,
-    });
-    setShowForm(true);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
-      const data = {
-        ...formData,
-        techStack: formData.techStack
-          .split(',')
-          .map((t: string) => t.trim())
-          .filter(Boolean),
-      };
-
-      if (editingId) {
-        const response = await projectAPI.updateProject(editingId, data);
-        setProjects((currentProjects) =>
-          currentProjects.map((project) =>
-            project._id === editingId ? response?.data || { ...project, ...data } : project
-          )
-        );
-        alert('Project updated successfully!');
-      } else {
-        const response = await projectAPI.createProject(data);
-        setProjects((currentProjects) => [response?.data || data, ...currentProjects]);
-        alert('Project created successfully!');
-      }
-
-      setShowForm(false);
-      setEditingId(null);
-      setFormData({
-        title: '',
-        description: '',
-        imageUrl: '',
-        techStack: '',
-        liveLink: '',
-        githubLink: '',
-      });
-      await loadProjects();
-      if (onUpdate) await onUpdate();
-    } catch (err) {
-      console.error('Failed to save project:', err);
-      alert('Failed to save project');
+      await onSubmit(values);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this project?')) {
-      try {
-        await projectAPI.deleteProject(id);
-        setProjects((currentProjects) => currentProjects.filter((project) => project._id !== id));
-        alert('Project deleted successfully!');
-        await loadProjects();
-        if (onUpdate) await onUpdate();
-      } catch (err) {
-        console.error('Failed to delete project:', err);
-        alert('Failed to delete project');
-      }
-    }
-  };
-
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Manage Projects</h2>
-        <button
-          onClick={handleAddNew}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-          Add Project
-        </button>
-      </div>
-
-      {showForm && (
-        <form onSubmit={handleSubmit} className="bg-surface border border-border rounded-lg p-6 space-y-4">
-          <input
-            type="text"
-            placeholder="Project Title"
-            value={formData.title}
-            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
-            required
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.div
+            className="fixed inset-0 z-40 bg-black/40"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={onClose}
           />
-          <textarea
-            placeholder="Project Description"
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            rows={3}
-            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
-            required
-          />
-          <input
-            type="url"
-            placeholder="Image URL"
-            value={formData.imageUrl}
-            onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
-            required
-          />
-          <input
-            type="text"
-            placeholder="Tech Stack (comma separated)"
-            value={formData.techStack}
-            onChange={(e) => setFormData({ ...formData, techStack: e.target.value })}
-            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
-          />
-          <input
-            type="url"
-            placeholder="Live Link"
-            value={formData.liveLink}
-            onChange={(e) => setFormData({ ...formData, liveLink: e.target.value })}
-            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
-          />
-          <input
-            type="url"
-            placeholder="GitHub Link"
-            value={formData.githubLink}
-            onChange={(e) => setFormData({ ...formData, githubLink: e.target.value })}
-            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
-          />
-          <div className="flex gap-3">
-            <button
-              type="submit"
-              disabled={saving}
-              className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition-colors"
-            >
-              {saving ? 'Saving...' : editingId ? 'Update' : 'Create'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowForm(false)}
-              className="px-4 py-2 bg-surface-3 hover:bg-surface-3 rounded-lg transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      )}
-
-      {loading ? (
-        <p className="text-muted-foreground">Loading projects...</p>
-      ) : (
-        <div className="grid md:grid-cols-2 gap-6">
-          {projects.map((project) => (
-            <div key={project._id} className="bg-surface border border-border rounded-lg p-4">
-              <h3 className="text-lg font-bold mb-2">{project.title}</h3>
-              <p className="text-muted-foreground text-sm mb-2">{project.description}</p>
-              <div className="flex gap-2 flex-wrap mb-3">
-                {project.techStack?.map((tech: string) => (
-                  <span key={tech} className="px-2 py-1 bg-blue-500/10 text-blue-800 dark:text-blue-200 text-xs rounded">
-                    {tech}
-                  </span>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleEdit(project)}
-                  className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white hover:bg-blue-700 rounded text-sm transition-colors"
-                >
-                  <Edit2 className="w-4 h-4" />
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(project._id)}
-                  className="flex items-center gap-1 px-3 py-1 bg-red-600 text-white hover:bg-red-700 rounded text-sm transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Delete
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </motion.div>
-  );
-}
-
-// Experience Section
-function ExperienceSection({ onUpdate }: any) {
-  const [experiences, setExperiences] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    title: '',
-    company: '',
-    description: '',
-    location: '',
-    startDate: '',
-    endDate: '',
-    isCurrentRole: false,
-    technologies: '',
-    gradient: 'from-blue-500 to-cyan-500',
-    color: 'blue',
-  });
-
-  useEffect(() => {
-    loadExperiences();
-  }, []);
-
-  const loadExperiences = async () => {
-    try {
-      setLoading(true);
-      const response = await experienceAPI.getAllExperience();
-      setExperiences(response?.data || []);
-    } catch (err) {
-      console.error('Failed to load experiences:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAddNew = () => {
-    setEditingId(null);
-    setFormData({
-      title: '',
-      company: '',
-      description: '',
-      location: '',
-      startDate: '',
-      endDate: '',
-      isCurrentRole: false,
-      technologies: '',
-      gradient: 'from-blue-500 to-cyan-500',
-      color: 'blue',
-    });
-    setShowForm(true);
-  };
-
-  const handleEdit = (exp: any) => {
-    setEditingId(exp._id);
-    setFormData({
-      title: exp.title,
-      company: exp.company,
-      description: exp.description || '',
-      location: exp.location || '',
-      startDate: exp.startDate?.split('T')[0] || '',
-      endDate: exp.endDate?.split('T')[0] || '',
-      isCurrentRole: exp.isCurrentRole || false,
-      technologies: exp.technologies?.join(', ') || '',
-      gradient: exp.gradient || 'from-blue-500 to-cyan-500',
-      color: exp.color || 'blue',
-    });
-    setShowForm(true);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const data = {
-        ...formData,
-        technologies: formData.technologies.split(',').map((t: string) => t.trim()),
-      };
-
-      if (editingId) {
-        await experienceAPI.updateExperience(editingId, data);
-        alert('Experience updated successfully!');
-      } else {
-        await experienceAPI.createExperience(data);
-        alert('Experience created successfully!');
-      }
-
-      setShowForm(false);
-      loadExperiences();
-      if (onUpdate) onUpdate();
-    } catch (err) {
-      console.error('Failed to save experience:', err);
-      alert('Failed to save experience');
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this experience?')) {
-      try {
-        await experienceAPI.deleteExperience(id);
-        alert('Experience deleted successfully!');
-        loadExperiences();
-        if (onUpdate) onUpdate();
-      } catch (err) {
-        console.error('Failed to delete experience:', err);
-        alert('Failed to delete experience');
-      }
-    }
-  };
-
-  return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Manage Experience</h2>
-        <button
-          onClick={handleAddNew}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-          Add Experience
-        </button>
-      </div>
-
-      {showForm && (
-        <form onSubmit={handleSubmit} className="bg-surface border border-border rounded-lg p-6 space-y-4">
-          <input
-            type="text"
-            placeholder="Job Title"
-            value={formData.title}
-            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
-            required
-          />
-          <input
-            type="text"
-            placeholder="Company"
-            value={formData.company}
-            onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
-            required
-          />
-          <input
-            type="text"
-            placeholder="Location"
-            value={formData.location}
-            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
-          />
-          <textarea
-            placeholder="Description"
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            rows={3}
-            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
-          />
-          <input
-            type="date"
-            value={formData.startDate}
-            onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
-            required
-          />
-          <input
-            type="date"
-            value={formData.endDate}
-            onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
-            disabled={formData.isCurrentRole}
-          />
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={formData.isCurrentRole}
-              onChange={(e) => setFormData({ ...formData, isCurrentRole: e.target.checked })}
-              className="w-4 h-4"
-            />
-            <span>Currently working here</span>
-          </label>
-          <input
-            type="text"
-            placeholder="Technologies (comma separated)"
-            value={formData.technologies}
-            onChange={(e) => setFormData({ ...formData, technologies: e.target.value })}
-            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
-          />
-          <select
-            value={formData.gradient || 'from-blue-500 to-cyan-500'}
-            onChange={(e) => setFormData({ ...formData, gradient: e.target.value })}
-            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
+          <motion.aside
+            role="dialog"
+            aria-modal="true"
+            aria-label={title}
+            initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
+            transition={{ type: 'spring', stiffness: 380, damping: 38 }}
+            className="fixed inset-y-0 right-0 z-50 w-full max-w-xl bg-surface border-l border-border shadow-2xl flex flex-col"
           >
-            <option value="from-blue-500 to-cyan-500">Blue/Cyan</option>
-            <option value="from-purple-500 to-pink-500">Purple/Pink</option>
-            <option value="from-green-500 to-emerald-500">Green/Emerald</option>
-            <option value="from-orange-500 to-red-500">Orange/Red</option>
-            <option value="from-indigo-500 to-blue-500">Indigo/Blue</option>
-            <option value="from-teal-500 to-blue-500">Teal/Blue</option>
-          </select>
-          <select
-            value={formData.color || 'blue'}
-            onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
-          >
-            <option value="blue">Blue</option>
-            <option value="purple">Purple</option>
-            <option value="green">Green</option>
-            <option value="orange">Orange</option>
-            <option value="indigo">Indigo</option>
-            <option value="teal">Teal</option>
-          </select>
-          <div className="flex gap-3">
-            <button
-              type="submit"
-              className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition-colors"
-            >
-              {editingId ? 'Update' : 'Create'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowForm(false)}
-              className="px-4 py-2 bg-surface-3 hover:bg-surface-3 rounded-lg transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      )}
-
-      {loading ? (
-        <p className="text-muted-foreground">Loading experiences...</p>
-      ) : (
-        <div className="space-y-4">
-          {experiences.map((exp) => (
-            <div key={exp._id} className="bg-surface border border-border rounded-lg p-4">
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <h3 className="text-lg font-bold">{exp.title}</h3>
-                  <p className="text-blue-600 dark:text-blue-400">{exp.company}</p>
-                  <p className="text-muted-foreground text-sm">
-                    {new Date(exp.startDate).toLocaleDateString()} -{' '}
-                    {exp.isCurrentRole ? 'Present' : new Date(exp.endDate).toLocaleDateString()}
-                  </p>
-                </div>
+            <div className="flex items-center justify-between px-6 h-16 border-b border-border shrink-0">
+              <div>
+                <p className="hud-label">Editor</p>
+                <h2 className="font-display text-lg font-semibold text-foreground leading-tight">{title}</h2>
               </div>
-              <p className="text-muted-foreground text-sm mb-2">{exp.description}</p>
-              {exp.technologies?.length > 0 && (
-                <div className="flex gap-2 flex-wrap mb-3">
-                  {exp.technologies.map((tech: string) => (
-                    <span key={tech} className="px-2 py-1 bg-green-500/10 text-green-800 dark:text-green-200 text-xs rounded">
-                      {tech}
-                    </span>
-                  ))}
-                </div>
-              )}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleEdit(exp)}
-                  className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white hover:bg-blue-700 rounded text-sm transition-colors"
-                >
-                  <Edit2 className="w-4 h-4" />
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(exp._id)}
-                  className="flex items-center gap-1 px-3 py-1 bg-red-600 text-white hover:bg-red-700 rounded text-sm transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Delete
-                </button>
-              </div>
+              <button type="button" onClick={onClose} className="icon-btn" aria-label="Close editor"><X className="w-4 h-4" /></button>
             </div>
-          ))}
-        </div>
-      )}
-    </motion.div>
-  );
-}
-
-// Skills Section
-function SkillsSection({ onUpdate }: any) {
-  const [skills, setSkills] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    category: '',
-    skillsData: '',
-  });
-
-  useEffect(() => {
-    loadSkills();
-  }, []);
-
-  const loadSkills = async () => {
-    try {
-      setLoading(true);
-      const response = await skillAPI.getAllSkills();
-      setSkills(response?.data || []);
-    } catch (err) {
-      console.error('Failed to load skills:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAddNew = () => {
-    setEditingId(null);
-    setFormData({ category: '', skillsData: '' });
-    setShowForm(true);
-  };
-
-  const handleEdit = (skill: any) => {
-    setEditingId(skill._id);
-    const skillsText = skill.skills
-      ?.map((s: any) => `${s.name}:${s.proficiency}:${s.yearsOfExperience || 0}`)
-      .join('|');
-    setFormData({
-      category: skill.category,
-      skillsData: skillsText || '',
-    });
-    setShowForm(true);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const skills = formData.skillsData
-        .split('|')
-        .filter((s) => s.trim())
-        .map((s) => {
-          const [name, proficiency, yearsOfExperience] = s.split(':');
-          return {
-            name: name.trim(),
-            proficiency: proficiency.trim(),
-            yearsOfExperience: parseInt(yearsOfExperience) || 0,
-          };
-        });
-
-      const data = {
-        category: formData.category,
-        skills,
-      };
-
-      if (editingId) {
-        await skillAPI.updateSkill(editingId, data);
-        alert('Skill category updated successfully!');
-      } else {
-        await skillAPI.createSkill(data);
-        alert('Skill category created successfully!');
-      }
-
-      setShowForm(false);
-      loadSkills();
-      if (onUpdate) onUpdate();
-    } catch (err) {
-      console.error('Failed to save skill:', err);
-      alert('Failed to save skill');
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this skill category?')) {
-      try {
-        await skillAPI.deleteSkill(id);
-        alert('Skill category deleted successfully!');
-        loadSkills();
-        if (onUpdate) onUpdate();
-      } catch (err) {
-        console.error('Failed to delete skill:', err);
-        alert('Failed to delete skill');
-      }
-    }
-  };
-
-  return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Manage Skills</h2>
-        <button
-          onClick={handleAddNew}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-          Add Skill Category
-        </button>
-      </div>
-
-      <div className="bg-blue-500/10 border border-blue-700 rounded-lg p-4 text-sm text-blue-800 dark:text-blue-200">
-        <strong>Format:</strong> SkillName:proficiency:years (e.g., React:expert:5|TypeScript:advanced:4)
-        <br />
-        <strong>Proficiency:</strong> beginner, intermediate, advanced, expert
-      </div>
-
-      {showForm && (
-        <form onSubmit={handleSubmit} className="bg-surface border border-border rounded-lg p-6 space-y-4">
-          <input
-            type="text"
-            placeholder="Category Name (e.g., Frontend, Backend)"
-            value={formData.category}
-            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
-            required
-          />
-          <textarea
-            placeholder="Skills (Format: Name:proficiency:years|Name:proficiency:years)"
-            value={formData.skillsData}
-            onChange={(e) => setFormData({ ...formData, skillsData: e.target.value })}
-            rows={4}
-            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500 font-mono text-sm"
-            required
-          />
-          <div className="flex gap-3">
-            <button
-              type="submit"
-              className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition-colors"
-            >
-              {editingId ? 'Update' : 'Create'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowForm(false)}
-              className="px-4 py-2 bg-surface-3 hover:bg-surface-3 rounded-lg transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      )}
-
-      {loading ? (
-        <p className="text-muted-foreground">Loading skills...</p>
-      ) : (
-        <div className="grid md:grid-cols-2 gap-6">
-          {skills.map((skill) => (
-            <div key={skill._id} className="bg-surface border border-border rounded-lg p-4">
-              <h3 className="text-lg font-bold mb-3">{skill.category}</h3>
-              <div className="space-y-2 mb-3">
-                {skill.skills?.map((s: any) => (
-                  <div key={s.name} className="text-sm">
-                    <p className="text-foreground/80">
-                      {s.name} <span className="text-muted-foreground">({s.proficiency})</span>
-                    </p>
+            <form onSubmit={submit} className="flex-1 flex flex-col min-h-0">
+              <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 sm:grid-cols-2 gap-4 content-start">
+                {fields.map((f) => (
+                  <div key={f.name} className={f.full || f.type === 'textarea' || f.type === 'lines' ? 'sm:col-span-2' : ''}>
+                    <FieldInput field={f} values={values} setValue={setValue} />
                   </div>
                 ))}
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleEdit(skill)}
-                  className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white hover:bg-blue-700 rounded text-sm transition-colors"
-                >
-                  <Edit2 className="w-4 h-4" />
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(skill._id)}
-                  className="flex items-center gap-1 px-3 py-1 bg-red-600 text-white hover:bg-red-700 rounded text-sm transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Delete
+              <div className="flex justify-end gap-2.5 px-6 py-4 border-t border-border shrink-0">
+                <button type="button" onClick={onClose} className="btn btn-outline py-2.5">Cancel</button>
+                <button type="submit" disabled={saving} className="btn btn-primary py-2.5">
+                  {saving ? <Spinner /> : <Save className="w-4 h-4" />}
+                  {saving ? 'Saving…' : 'Save'}
                 </button>
               </div>
-            </div>
+            </form>
+          </motion.aside>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
+function CollectionManager({ config, onChanged }: { config: CollectionConfig; onChanged: () => void }) {
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState<{ record?: any } | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await config.api.list();
+      const data = Array.isArray(res?.data) ? res.data : [];
+      setItems(config.sort ? [...data].sort(config.sort) : data);
+    } catch (err) {
+      notify.error(`Couldn't load ${config.title.toLowerCase()}: ${errorText(err)}`);
+    } finally {
+      setLoading(false);
+    }
+  }, [config]);
+
+  useEffect(() => { setLoading(true); load(); }, [load]);
+
+  const initial = useMemo(() => {
+    const record = editing?.record;
+    if (!record) return { ...config.defaults, ...(config.defaults.order !== undefined ? { order: items.length + 1 } : {}) };
+    return config.toForm ? config.toForm(record) : recordToForm(config.fields, record, config.defaults);
+  }, [editing, config, items.length]);
+
+  const save = async (values: Record<string, any>) => {
+    const original = editing?.record;
+    const payload = config.toPayload ? config.toPayload(values, original) : formToPayload(config.fields, values);
+    try {
+      if (original?._id) {
+        await config.api.update(original._id, payload);
+        notify.success(`${config.singular} updated`);
+      } else {
+        await config.api.create(payload);
+        notify.success(`${config.singular} added`);
+      }
+      setEditing(null);
+      await load();
+      onChanged();
+    } catch (err) {
+      notify.error(`Save failed: ${errorText(err)}`);
+    }
+  };
+
+  const remove = async (record: any) => {
+    if (!window.confirm(`Delete "${record.title || record.category || config.singular}"? This can't be undone.`)) return;
+    setBusyId(record._id);
+    try {
+      await config.api.remove(record._id);
+      setItems((list) => list.filter((r) => r._id !== record._id));
+      notify.success(`${config.singular} deleted`);
+      onChanged();
+    } catch (err) {
+      notify.error(`Delete failed: ${errorText(err)}`);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  return (
+    <div>
+      <PageHeader
+        title={config.title}
+        subtitle={config.subtitle}
+        action={
+          <button type="button" onClick={() => setEditing({})} className="btn btn-primary py-2.5">
+            <Plus className="w-4 h-4" /> Add {config.singular.toLowerCase()}
+          </button>
+        }
+      />
+
+      {loading ? (
+        <div className={`grid grid-cols-1 ${config.columns === 1 ? '' : 'lg:grid-cols-2'} gap-4`}>
+          {[0, 1, 2, 3].map((i) => <div key={i} className="panel h-36 animate-pulse" />)}
+        </div>
+      ) : items.length === 0 ? (
+        <EmptyState text={`No ${config.title.toLowerCase()} yet. Add your first one.`} />
+      ) : (
+        <div className={`grid grid-cols-1 ${config.columns === 1 ? '' : 'lg:grid-cols-2'} gap-4`}>
+          {items.map((record) => (
+            <article key={record._id} className="panel p-5 flex flex-col">
+              <div className="flex-1 min-w-0">{config.renderCard(record)}</div>
+              <div className="mt-4 pt-4 border-t border-border flex items-center gap-2">
+                <button type="button" onClick={() => setEditing({ record })} className="btn btn-outline py-2 px-3.5 text-sm">
+                  <Pencil className="w-3.5 h-3.5" /> Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={() => remove(record)}
+                  disabled={busyId === record._id}
+                  className="btn py-2 px-3.5 text-sm text-red-600 dark:text-red-400 border border-red-500/30 hover:bg-red-500/10 disabled:opacity-50"
+                >
+                  {busyId === record._id ? <Spinner /> : <Trash2 className="w-3.5 h-3.5" />} Delete
+                </button>
+              </div>
+            </article>
           ))}
         </div>
       )}
-    </motion.div>
+
+      <EditorDrawer
+        open={editing !== null}
+        title={editing?.record ? `Edit ${config.singular.toLowerCase()}` : `New ${config.singular.toLowerCase()}`}
+        fields={config.fields}
+        initial={initial}
+        onClose={() => setEditing(null)}
+        onSubmit={save}
+      />
+    </div>
   );
 }
 
-// Statistics Section
-function StatsSection({ portfolio, onUpdate }: any) {
-  const [stats, setStats] = useState<any>({
-    projectsCompleted: 50,
-    yearsExperience: 5,
-    usersImpacted: 100,
-    technologiesCount: 15,
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState('');
+/* ------------------------------------------------------------------ */
+/* Collection configurations                                           */
+/* ------------------------------------------------------------------ */
 
-  useEffect(() => {
-    loadStats();
-  }, []);
+const Chips = ({ items, mono }: { items?: string[]; mono?: boolean }) =>
+  items && items.length > 0 ? (
+    <div className="mt-3 flex flex-wrap gap-1.5">
+      {items.map((t) => <span key={t} className={`chip text-[11px] ${mono ? 'font-mono' : ''}`}>{t}</span>)}
+    </div>
+  ) : null;
 
-  const loadStats = async () => {
+const AccentBar = ({ gradient }: { gradient?: string }) => {
+  const [from, to] = accentFor(gradient);
+  return <div className="h-[3px] w-12 rounded-full mb-3" style={{ backgroundImage: `linear-gradient(90deg, ${from}, ${to})` }} />;
+};
+
+const fmtMonth = (d?: string | null) => {
+  if (!d) return '';
+  const t = new Date(d);
+  return isNaN(t.getTime()) ? d : t.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+};
+
+const LinkOut = ({ href, label }: { href?: string; label: string }) =>
+  href ? (
+    <a href={href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs font-medium text-neon-violet hover:underline">
+      {label} <ArrowUpRight className="w-3 h-3" />
+    </a>
+  ) : null;
+
+const projectsConfig: CollectionConfig = {
+  title: 'Projects',
+  subtitle: 'Shown in the "Things I\'ve built" section, in order.',
+  singular: 'Project',
+  api: {
+    list: projectAPI.getAllProjects,
+    create: (d) => projectAPI.createProject(d),
+    update: projectAPI.updateProject,
+    remove: projectAPI.deleteProject,
+  },
+  fields: [
+    { name: 'title', label: 'Title', type: 'text', required: true, full: true },
+    { name: 'description', label: 'Description', type: 'textarea', required: true },
+    { name: 'highlights', label: 'Key points', type: 'lines', hint: 'one per line' },
+    { name: 'techStack', label: 'Tech stack', type: 'list', hint: 'comma separated', full: true },
+    { name: 'liveLink', label: 'Live URL', type: 'link', placeholder: 'https://…' },
+    { name: 'githubLink', label: 'GitHub URL', type: 'link', placeholder: 'https://github.com/…' },
+    { name: 'gradient', label: 'Accent colour', type: 'select', options: GRADIENTS },
+    { name: 'order', label: 'Order', type: 'number' },
+  ],
+  defaults: { title: '', description: '', highlights: '', techStack: '', liveLink: '', githubLink: '', gradient: GRADIENTS[0].value, order: 0 },
+  sort: (a, b) => (a.order ?? 0) - (b.order ?? 0),
+  renderCard: (p) => (
+    <>
+      <AccentBar gradient={p.gradient} />
+      <h3 className="font-display text-lg font-semibold text-foreground">{p.title}</h3>
+      <p className="mt-1.5 text-sm text-muted-foreground line-clamp-2">{p.description}</p>
+      <Chips items={p.techStack} mono />
+      <div className="mt-3 flex gap-4"><LinkOut href={p.liveLink} label="Live" /><LinkOut href={p.githubLink} label="GitHub" /></div>
+    </>
+  ),
+};
+
+const experienceConfig: CollectionConfig = {
+  title: 'Experience',
+  subtitle: 'Sorted by start date, newest first.',
+  singular: 'Experience',
+  api: {
+    list: experienceAPI.getAllExperience,
+    create: (d) => experienceAPI.createExperience(d),
+    update: experienceAPI.updateExperience,
+    remove: experienceAPI.deleteExperience,
+  },
+  fields: [
+    { name: 'title', label: 'Role', type: 'text', required: true },
+    { name: 'company', label: 'Company', type: 'text', required: true },
+    { name: 'type', label: 'Type', type: 'text', placeholder: 'Internship, Full-time…' },
+    { name: 'location', label: 'Location', type: 'text' },
+    { name: 'startDate', label: 'Start date', type: 'date', required: true },
+    { name: 'endDate', label: 'End date', type: 'date', disabledWhen: (v) => Boolean(v.isCurrentRole) },
+    { name: 'isCurrentRole', label: 'I currently work here', type: 'checkbox', full: true },
+    { name: 'description', label: 'What you did', type: 'lines', hint: 'one bullet per line' },
+    { name: 'technologies', label: 'Technologies', type: 'list', hint: 'comma separated', full: true },
+    { name: 'credentialUrl', label: 'Certificate / letter URL', type: 'link' },
+    { name: 'credentialLabel', label: 'Link label', type: 'text', placeholder: 'Certificate' },
+    { name: 'gradient', label: 'Accent colour', type: 'select', options: GRADIENTS },
+  ],
+  defaults: {
+    title: '', company: '', type: '', location: '', startDate: '', endDate: '', isCurrentRole: false,
+    description: '', technologies: '', credentialUrl: '', credentialLabel: '', gradient: GRADIENTS[0].value,
+  },
+  // Description is stored as a newline-separated string, not an array.
+  toPayload: (values) => {
+    const payload = formToPayload(experienceConfig.fields, values);
+    payload.description = (payload.description as string[]).join('\n');
+    if (payload.isCurrentRole) payload.endDate = null;
+    return payload;
+  },
+  sort: (a, b) => String(b.startDate).localeCompare(String(a.startDate)),
+  columns: 1,
+  renderCard: (e) => (
+    <div className="flex flex-col sm:flex-row sm:justify-between gap-2">
+      <div className="min-w-0">
+        <AccentBar gradient={e.gradient} />
+        <h3 className="font-display text-lg font-semibold text-foreground">{e.title}</h3>
+        <p className="text-sm text-foreground/80">{e.company}{e.type ? ` · ${e.type}` : ''}</p>
+        <Chips items={e.technologies} mono />
+      </div>
+      <div className="shrink-0 sm:text-right font-mono text-xs text-muted-foreground space-y-1">
+        <p>{fmtMonth(e.startDate)} – {e.isCurrentRole || !e.endDate ? 'Present' : fmtMonth(e.endDate)}</p>
+        {e.location && <p>{e.location}</p>}
+        <LinkOut href={e.credentialUrl} label={e.credentialLabel || 'Credential'} />
+      </div>
+    </div>
+  ),
+};
+
+const ACHIEVEMENT_ICONS = ['Award', 'Target', 'Users', 'Zap', 'Code', 'Megaphone'].map((v) => ({ value: v, label: v }));
+
+const achievementsConfig: CollectionConfig = {
+  title: 'Achievements',
+  subtitle: 'Leadership roles, awards and milestones.',
+  singular: 'Achievement',
+  api: {
+    list: achievementAPI.getAllAchievements,
+    create: (d) => achievementAPI.createAchievement(d),
+    update: achievementAPI.updateAchievement,
+    remove: achievementAPI.deleteAchievement,
+  },
+  fields: [
+    { name: 'title', label: 'Title', type: 'text', required: true, full: true },
+    { name: 'subtitle', label: 'Subtitle', type: 'text', full: true },
+    { name: 'description', label: 'Description', type: 'textarea', required: true },
+    { name: 'details', label: 'Highlights (chips)', type: 'lines', hint: 'one per line' },
+    { name: 'link', label: 'Link', type: 'link', full: true },
+    { name: 'icon', label: 'Icon', type: 'select', options: ACHIEVEMENT_ICONS },
+    { name: 'gradient', label: 'Accent colour', type: 'select', options: GRADIENTS },
+    { name: 'order', label: 'Order', type: 'number' },
+  ],
+  defaults: { title: '', subtitle: '', description: '', details: '', link: '', icon: 'Award', gradient: GRADIENTS[0].value, order: 0 },
+  sort: (a, b) => (a.order ?? 0) - (b.order ?? 0),
+  renderCard: (a) => (
+    <>
+      <AccentBar gradient={a.gradient} />
+      <h3 className="font-display text-lg font-semibold text-foreground">{a.title}</h3>
+      <p className="font-mono text-[11px] uppercase tracking-wider text-neon-cyan">{a.subtitle}</p>
+      <p className="mt-1.5 text-sm text-muted-foreground line-clamp-2">{a.description}</p>
+      <Chips items={a.details} />
+      <div className="mt-3"><LinkOut href={a.link} label="Link" /></div>
+    </>
+  ),
+};
+
+const certificationsConfig: CollectionConfig = {
+  title: 'Certifications',
+  subtitle: 'Each card links to its verification page.',
+  singular: 'Certification',
+  api: {
+    list: certificationAPI.getAllCertifications,
+    create: certificationAPI.createCertification,
+    update: certificationAPI.updateCertification,
+    remove: certificationAPI.deleteCertification,
+  },
+  fields: [
+    { name: 'title', label: 'Title', type: 'text', required: true, full: true },
+    { name: 'issuer', label: 'Issuer', type: 'text', required: true, placeholder: 'Google' },
+    { name: 'platform', label: 'Platform', type: 'text', placeholder: 'Coursera' },
+    { name: 'issueDate', label: 'Issued on', type: 'date' },
+    { name: 'credentialId', label: 'Credential ID', type: 'text' },
+    { name: 'verifyUrl', label: 'Verification URL', type: 'link', full: true },
+    { name: 'description', label: 'Description', type: 'textarea' },
+    { name: 'modules', label: 'Modules / skills', type: 'list', hint: 'comma separated', full: true },
+    { name: 'order', label: 'Order', type: 'number' },
+  ],
+  defaults: { title: '', issuer: '', platform: '', issueDate: '', credentialId: '', verifyUrl: '', description: '', modules: '', order: 0 },
+  sort: (a, b) => (a.order ?? 0) - (b.order ?? 0),
+  renderCard: (c) => (
+    <>
+      <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+        {[c.issuer, c.platform, fmtMonth(c.issueDate)].filter(Boolean).join(' · ')}
+      </p>
+      <h3 className="mt-1 font-display text-lg font-semibold text-foreground">{c.title}</h3>
+      <Chips items={c.modules} />
+      <div className="mt-3"><LinkOut href={c.verifyUrl} label="Verify" /></div>
+    </>
+  ),
+};
+
+const LEVELS = ['beginner', 'intermediate', 'advanced', 'expert'];
+
+const skillsConfig: CollectionConfig = {
+  title: 'Skills',
+  subtitle: 'Grouped by category. Add a level with "Name:level", e.g. "React:expert" (optional).',
+  singular: 'Skill category',
+  api: {
+    list: skillAPI.getAllSkills,
+    create: (d) => skillAPI.createSkill(d),
+    update: skillAPI.updateSkill,
+    remove: skillAPI.deleteSkill,
+  },
+  fields: [
+    { name: 'category', label: 'Category', type: 'text', required: true },
+    { name: 'order', label: 'Order', type: 'number' },
+    { name: 'skills', label: 'Skills', type: 'lines', hint: 'one per line or comma separated', required: true },
+  ],
+  defaults: { category: '', order: 0, skills: '' },
+  toForm: (r) => ({
+    category: r.category || '',
+    order: r.order ?? 0,
+    skills: (r.skills || [])
+      .map((s: any) => (s.proficiency && LEVELS.includes(s.proficiency) ? `${s.name}:${s.proficiency}` : s.name))
+      .join('\n'),
+  }),
+  toPayload: (values) => ({
+    category: String(values.category).trim(),
+    order: Number(values.order) || 0,
+    skills: String(values.skills)
+      .split(/[\n,]/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .map((entry) => {
+        const [name, level] = entry.split(':').map((p) => p.trim());
+        const lower = level?.toLowerCase();
+        return lower && LEVELS.includes(lower) ? { name, proficiency: lower } : { name: level ? entry : name };
+      }),
+  }),
+  sort: (a, b) => (a.order ?? 0) - (b.order ?? 0),
+  renderCard: (s) => (
+    <>
+      <div className="flex items-center justify-between">
+        <h3 className="font-display text-lg font-semibold text-foreground">{s.category}</h3>
+        <span className="font-mono text-xs text-muted-foreground">{s.skills?.length || 0} skills</span>
+      </div>
+      <Chips items={(s.skills || []).map((k: any) => (k.proficiency ? `${k.name} · ${k.proficiency}` : k.name))} />
+    </>
+  ),
+};
+
+/* ------------------------------------------------------------------ */
+/* Profile (single portfolio record)                                   */
+/* ------------------------------------------------------------------ */
+
+const ABOUT_ICONS = ['Code', 'Lightbulb', 'Users', 'Target'];
+
+function useFormState<T>(initial: T) {
+  const [state, setState] = useState<T>(initial);
+  const set = (path: string, value: any) =>
+    setState((cur: any) => {
+      const next = structuredClone(cur);
+      const keys = path.split('.');
+      let node = next;
+      keys.slice(0, -1).forEach((k) => { node[k] = node[k] ?? {}; node = node[k]; });
+      node[keys[keys.length - 1]] = value;
+      return next;
+    });
+  return [state, set, setState] as const;
+}
+
+const profileFromPortfolio = (p: any) => ({
+  fullName: p?.fullName || '',
+  title: p?.title || '',
+  bio: p?.bio || '',
+  profileImage: p?.profileImage || '/images/profile.jpg',
+  resumeLink: p?.resumeLink || '',
+  email: p?.email || '',
+  phone: p?.phone || '',
+  location: p?.location || '',
+  education: {
+    institution: p?.education?.institution || '',
+    degree: p?.education?.degree || '',
+    period: p?.education?.period || '',
+    cgpa: p?.education?.cgpa || '',
+  },
+  socialLinks: {
+    github: p?.socialLinks?.github || '',
+    linkedin: p?.socialLinks?.linkedin || '',
+    twitter: p?.socialLinks?.twitter || '',
+    leetcode: p?.socialLinks?.leetcode || '',
+    website: p?.socialLinks?.website || '',
+  },
+  heroHighlights: [0, 1, 2].map((i) => ({
+    value: p?.heroHighlights?.[i]?.value || '',
+    label: p?.heroHighlights?.[i]?.label || '',
+  })),
+});
+
+const aboutFromPortfolio = (p: any) => ({
+  aboutDescription: p?.aboutDescription || '',
+  stats: {
+    projectsCompleted: p?.stats?.projectsCompleted ?? 0,
+    yearsExperience: p?.stats?.yearsExperience ?? 0,
+    usersImpacted: p?.stats?.usersImpacted ?? 0,
+    technologiesCount: p?.stats?.technologiesCount ?? 0,
+  },
+  aboutHighlights: [0, 1, 2, 3].map((i) => ({
+    id: p?.aboutHighlights?.[i]?.id ?? i + 1,
+    icon: p?.aboutHighlights?.[i]?.icon || ABOUT_ICONS[i],
+    title: p?.aboutHighlights?.[i]?.title || '',
+    description: p?.aboutHighlights?.[i]?.description || '',
+  })),
+});
+
+function Card({ title, hud, children }: { title: string; hud?: string; children: React.ReactNode }) {
+  return (
+    <section className="panel p-6">
+      {hud && <p className="hud-label mb-1">{hud}</p>}
+      <h2 className="font-display text-lg font-semibold text-foreground mb-5">{title}</h2>
+      {children}
+    </section>
+  );
+}
+
+function TextField({ label, value, onChange, hint, placeholder, required, textarea, rows = 4, type = 'text' }: {
+  label: string; value: any; onChange: (v: string) => void; hint?: string; placeholder?: string; required?: boolean; textarea?: boolean; rows?: number; type?: string;
+}) {
+  return (
+    <label className="block">
+      <Label hint={hint}>{label}{required && <span className="text-red-500"> *</span>}</Label>
+      {textarea ? (
+        <textarea className="field resize-y" rows={rows} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} required={required} />
+      ) : (
+        <input className="field" type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} required={required} />
+      )}
+    </label>
+  );
+}
+
+function SaveBar({ saving, dirty }: { saving: boolean; dirty: boolean }) {
+  return (
+    <div className="sticky bottom-0 z-10 -mx-4 sm:mx-0 mt-6 px-4 sm:px-5 py-3.5 sm:rounded-2xl glass flex items-center justify-between gap-3">
+      <span className="text-sm text-muted-foreground">{dirty ? 'You have unsaved changes' : 'All changes saved'}</span>
+      <button type="submit" disabled={saving || !dirty} className="btn btn-primary py-2.5">
+        {saving ? <Spinner /> : <Save className="w-4 h-4" />} {saving ? 'Saving…' : 'Save changes'}
+      </button>
+    </div>
+  );
+}
+
+function usePortfolioSave(portfolio: any, onSaved: (p: any) => void) {
+  const [saving, setSaving] = useState(false);
+  const save = async (patch: Record<string, any>) => {
+    setSaving(true);
     try {
-      const data = await portfolioAPI.getPortfolio();
-      if (data?.data?.stats) {
-        setStats(data.data.stats);
-      }
-    } catch (error) {
-      console.error('Failed to load stats:', error);
-    }
-  };
-
-  const handleSaveStats = async () => {
-    setIsLoading(true);
-    setMessage('');
-    try {
-      const token = getAdminToken();
-      if (!token) {
-        setMessage('❌ Authentication required');
-        return;
-      }
-
-      const response = await fetch(`${ADMIN_API_BASE}/api/portfolio`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ stats }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update statistics');
-      }
-
-      setMessage('✅ Statistics updated successfully!');
-      setTimeout(() => setMessage(''), 3000);
-    } catch (error: any) {
-      setMessage(`❌ Error: ${error.message}`);
+      const res = await portfolioAPI.updatePortfolio(patch);
+      onSaved(res?.data || { ...portfolio, ...patch });
+      notify.success('Saved. Changes are live on your site.');
+    } catch (err) {
+      notify.error(`Save failed: ${errorText(err)}`);
     } finally {
-      setIsLoading(false);
+      setSaving(false);
     }
   };
+  return { saving, save };
+}
 
-  const handleStatChange = (field: string, value: number) => {
-    setStats((prev: any) => ({
-      ...prev,
-      [field]: Math.max(0, value),
-    }));
+function ProfileView({ portfolio, onSaved }: { portfolio: any; onSaved: (p: any) => void }) {
+  const initial = useMemo(() => profileFromPortfolio(portfolio), [portfolio]);
+  const [form, set, reset] = useFormState(initial);
+  useEffect(() => reset(initial), [initial, reset]);
+  const dirty = JSON.stringify(form) !== JSON.stringify(initial);
+  const { saving, save } = usePortfolioSave(portfolio, onSaved);
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    save({
+      ...form,
+      // Keep links this form doesn't edit (e.g. email_link) instead of wiping them.
+      socialLinks: { ...(portfolio?.socialLinks || {}), ...form.socialLinks },
+      education: { ...(portfolio?.education || {}), ...form.education },
+      heroHighlights: form.heroHighlights.filter((h) => h.value.trim() && h.label.trim()),
+    });
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="space-y-6"
-    >
-      <div className="bg-surface border border-border rounded-lg p-8">
-        <h2 className="text-2xl font-bold mb-8">Edit Statistics</h2>
-
-        <div className="grid md:grid-cols-2 gap-8">
-          {/* Projects Completed */}
-          <div>
-            <label className="block text-sm font-medium mb-2">Projects Completed</label>
-            <div className="flex items-center gap-3">
-              <input
-                type="number"
-                min="0"
-                value={stats.projectsCompleted || 50}
-                onChange={(e) => handleStatChange('projectsCompleted', parseInt(e.target.value) || 0)}
-                className="flex-1 px-4 py-2 bg-surface-2 border border-border-strong rounded text-foreground focus:border-blue-500 focus:outline-none"
-              />
-              <span className="text-muted-foreground">+</span>
+    <form onSubmit={submit}>
+      <PageHeader title="Profile" subtitle="Your name, headline, contact details and links." />
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
+        <div className="xl:col-span-2 space-y-5">
+          <Card title="Identity" hud="01">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <TextField label="Full name" value={form.fullName} onChange={(v) => set('fullName', v)} required />
+              <TextField label="Headline" value={form.title} onChange={(v) => set('title', v)} required />
+              <div className="sm:col-span-2">
+                <TextField label="Hero bio" value={form.bio} onChange={(v) => set('bio', v)} textarea rows={3} hint={`${form.bio.length} chars`} />
+              </div>
+              <TextField label="Profile photo URL" value={form.profileImage} onChange={(v) => set('profileImage', v)} hint="URL or /images/…" />
+              <TextField label="Resume link" value={form.resumeLink} onChange={(v) => set('resumeLink', v)} hint="URL or /file.pdf" />
             </div>
-          </div>
+          </Card>
 
-          {/* Years Experience */}
-          <div>
-            <label className="block text-sm font-medium mb-2">Years Experience</label>
-            <div className="flex items-center gap-3">
-              <input
-                type="number"
-                min="0"
-                value={stats.yearsExperience || 5}
-                onChange={(e) => handleStatChange('yearsExperience', parseInt(e.target.value) || 0)}
-                className="flex-1 px-4 py-2 bg-surface-2 border border-border-strong rounded text-foreground focus:border-blue-500 focus:outline-none"
-              />
-              <span className="text-muted-foreground">+</span>
+          <Card title="Contact" hud="02">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <TextField label="Email" type="email" value={form.email} onChange={(v) => set('email', v)} />
+              <TextField label="Phone" value={form.phone} onChange={(v) => set('phone', v)} />
+              <div className="sm:col-span-2"><TextField label="Location" value={form.location} onChange={(v) => set('location', v)} /></div>
             </div>
-          </div>
+          </Card>
 
-          {/* Users Impacted */}
-          <div>
-            <label className="block text-sm font-medium mb-2">Users Impacted (in thousands)</label>
-            <div className="flex items-center gap-3">
-              <input
-                type="number"
-                min="0"
-                value={stats.usersImpacted || 100}
-                onChange={(e) => handleStatChange('usersImpacted', parseInt(e.target.value) || 0)}
-                className="flex-1 px-4 py-2 bg-surface-2 border border-border-strong rounded text-foreground focus:border-blue-500 focus:outline-none"
-              />
-              <span className="text-muted-foreground">K+</span>
+          <Card title="Social links" hud="03">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {(['github', 'linkedin', 'leetcode', 'twitter', 'website'] as const).map((k) => (
+                <TextField key={k} label={k === 'twitter' ? 'X (Twitter)' : k[0].toUpperCase() + k.slice(1)} value={form.socialLinks[k]} onChange={(v) => set(`socialLinks.${k}`, v)} placeholder="https://…" />
+              ))}
             </div>
-          </div>
-
-          {/* Technologies Count */}
-          <div>
-            <label className="block text-sm font-medium mb-2">Technologies Count</label>
-            <div className="flex items-center gap-3">
-              <input
-                type="number"
-                min="0"
-                value={stats.technologiesCount || 15}
-                onChange={(e) => handleStatChange('technologiesCount', parseInt(e.target.value) || 0)}
-                className="flex-1 px-4 py-2 bg-surface-2 border border-border-strong rounded text-foreground focus:border-blue-500 focus:outline-none"
-              />
-              <span className="text-muted-foreground">+</span>
-            </div>
-          </div>
+          </Card>
         </div>
 
-        {/* Preview */}
-        <div className="mt-8 pt-8 border-t border-border">
-          <h3 className="text-lg font-semibold mb-4">Preview</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { number: `${stats.projectsCompleted}+`, label: 'Projects Completed' },
-              { number: `${stats.yearsExperience}+`, label: 'Years Experience' },
-              { number: `${stats.usersImpacted}K+`, label: 'Users Impacted' },
-              { number: `${stats.technologiesCount}+`, label: 'Technologies' },
-            ].map((stat) => (
-              <div key={stat.label} className="p-4 bg-surface-2 rounded-lg text-center">
-                <div className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                  {stat.number}
+        <div className="space-y-5">
+          <section className="panel p-6 text-center">
+            <img src={form.profileImage || '/images/profile.jpg'} alt="" className="mx-auto w-28 h-28 rounded-full object-cover object-top ring-2 ring-offset-4 ring-offset-surface ring-violet-500/60" />
+            <p className="mt-4 font-display text-lg font-semibold text-foreground">{form.fullName || 'Your name'}</p>
+            <p className="text-sm text-muted-foreground">{form.title || 'Your headline'}</p>
+          </section>
+
+          <Card title="Education" hud="04">
+            <div className="space-y-4">
+              <TextField label="Degree" value={form.education.degree} onChange={(v) => set('education.degree', v)} />
+              <TextField label="Institution" value={form.education.institution} onChange={(v) => set('education.institution', v)} />
+              <div className="grid grid-cols-2 gap-3">
+                <TextField label="Period" value={form.education.period} onChange={(v) => set('education.period', v)} placeholder="2023 – 2028" />
+                <TextField label="CGPA" value={form.education.cgpa} onChange={(v) => set('education.cgpa', v)} />
+              </div>
+            </div>
+          </Card>
+
+          <Card title="Hero highlights" hud="05">
+            <div className="space-y-3">
+              {form.heroHighlights.map((h, i) => (
+                <div key={i} className="grid grid-cols-[0.8fr_1.2fr] gap-2">
+                  <input className="field" value={h.value} onChange={(e) => set(`heroHighlights.${i}.value`, e.target.value)} placeholder="AIR 3460" aria-label={`Highlight ${i + 1} value`} />
+                  <input className="field" value={h.label} onChange={(e) => set(`heroHighlights.${i}.label`, e.target.value)} placeholder="GATE 2026 · CS" aria-label={`Highlight ${i + 1} label`} />
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">{stat.label}</div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      </div>
+      <SaveBar saving={saving} dirty={dirty} />
+    </form>
+  );
+}
+
+function AboutView({ portfolio, onSaved }: { portfolio: any; onSaved: (p: any) => void }) {
+  const initial = useMemo(() => aboutFromPortfolio(portfolio), [portfolio]);
+  const [form, set, reset] = useFormState(initial);
+  useEffect(() => reset(initial), [initial, reset]);
+  const dirty = JSON.stringify(form) !== JSON.stringify(initial);
+  const { saving, save } = usePortfolioSave(portfolio, onSaved);
+
+  const statFields = [
+    { key: 'projectsCompleted', label: 'Projects shipped', suffix: '+' },
+    { key: 'yearsExperience', label: 'Years building', suffix: '+' },
+    { key: 'usersImpacted', label: 'People reached', suffix: 'K+' },
+    { key: 'technologiesCount', label: 'Technologies', suffix: '+' },
+  ] as const;
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    save({
+      aboutDescription: form.aboutDescription,
+      stats: Object.fromEntries(Object.entries(form.stats).map(([k, v]) => [k, Math.max(0, Number(v) || 0)])),
+      aboutHighlights: form.aboutHighlights.filter((h) => h.title.trim()),
+    });
+  };
+
+  return (
+    <form onSubmit={submit}>
+      <PageHeader title="About & stats" subtitle="The About section story, the four stat tiles and the highlight cards." />
+      <div className="space-y-5">
+        <Card title="About text" hud="01">
+          <TextField label="Description" value={form.aboutDescription} onChange={(v) => set('aboutDescription', v)} textarea rows={9} hint="blank line = new paragraph" />
+        </Card>
+
+        <Card title="Stat tiles" hud="02">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {statFields.map(({ key, label, suffix }) => (
+              <label key={key} className="block">
+                <Label>{label}</Label>
+                <div className="relative">
+                  <input className="field pr-12" type="number" min={0} value={form.stats[key]} onChange={(e) => set(`stats.${key}`, e.target.value)} />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 font-mono text-xs text-muted-foreground">{suffix}</span>
+                </div>
+              </label>
+            ))}
+          </div>
+        </Card>
+
+        <Card title="Highlight cards" hud="03">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {form.aboutHighlights.map((h, i) => (
+              <div key={i} className="rounded-xl border border-border bg-surface-2/60 p-4 space-y-3">
+                <div className="grid grid-cols-[1fr_auto] gap-2">
+                  <input className="field" value={h.title} onChange={(e) => set(`aboutHighlights.${i}.title`, e.target.value)} placeholder={`Card ${i + 1} title`} aria-label={`Card ${i + 1} title`} />
+                  <select className="field w-36" value={h.icon} onChange={(e) => set(`aboutHighlights.${i}.icon`, e.target.value)} aria-label={`Card ${i + 1} icon`}>
+                    {ABOUT_ICONS.map((ic) => <option key={ic} value={ic}>{ic}</option>)}
+                  </select>
+                </div>
+                <textarea className="field resize-y" rows={3} value={h.description} onChange={(e) => set(`aboutHighlights.${i}.description`, e.target.value)} placeholder="Description" aria-label={`Card ${i + 1} description`} />
               </div>
             ))}
           </div>
-        </div>
-
-        {/* Message */}
-        {message && (
-          <div className={`mt-4 px-4 py-2 rounded text-sm ${message.includes('✅') ? 'bg-green-500/10 text-green-700 dark:text-green-400' : 'bg-red-500/10 text-red-700 dark:text-red-400'}`}>
-            {message}
-          </div>
-        )}
-
-        {/* Save Button */}
-        <div className="mt-8 flex justify-end">
-          <button
-            onClick={handleSaveStats}
-            disabled={isLoading}
-            className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-foreground rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-          </button>
-        </div>
+          <p className="mt-3 text-xs text-muted-foreground">Leave a card's title empty to hide it.</p>
+        </Card>
       </div>
-    </motion.div>
+      <SaveBar saving={saving} dirty={dirty} />
+    </form>
   );
 }
 
-// Achievements Section
-function AchievementsSection({ onUpdate }: any) {
-  const formRef = useRef<HTMLFormElement>(null);
-  const [achievements, setAchievements] = useState<any[]>([]);
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    icon: 'Award',
-    title: '',
-    subtitle: '',
-    description: '',
-    details: [] as string[],
-    gradient: 'from-blue-500 to-cyan-500',
-    color: 'blue',
-    order: 0,
-    link: '',
-  });
-  const [detailInput, setDetailInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
+/* ------------------------------------------------------------------ */
+/* Messages & overview                                                 */
+/* ------------------------------------------------------------------ */
 
-  const iconOptions = ['Award', 'Target', 'Users', 'Zap', 'Code', 'Megaphone'];
-  const gradientOptions = [
-    { label: 'Blue/Cyan', value: 'from-blue-500 to-cyan-500' },
-    { label: 'Purple/Pink', value: 'from-purple-500 to-pink-500' },
-    { label: 'Green/Emerald', value: 'from-green-500 to-emerald-500' },
-    { label: 'Orange/Red', value: 'from-orange-500 to-red-500' },
-  ];
-  const colorOptions = ['blue', 'purple', 'green', 'orange'];
-
-  useEffect(() => {
-    loadAchievements();
-  }, []);
-
-  // Scroll to form when it's shown
-  useEffect(() => {
-    if (showForm && formRef.current) {
-      setTimeout(() => {
-        formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
-    }
-  }, [showForm]);
-
-  const loadAchievements = async () => {
-    try {
-      console.log('📥 Loading achievements...');
-      const data = await achievementAPI.getAllAchievements();
-      const achievementsArray = Array.isArray(data.data) ? data.data : [];
-      console.log('✅ Loaded achievements:', achievementsArray.length, 'items');
-      setAchievements(achievementsArray);
-    } catch (error) {
-      console.error('❌ Failed to load achievements:', error);
-      setMessage('❌ Failed to load achievements');
-      setAchievements([]);
-    }
-  };
-
-  const handleAddNew = () => {
-    setEditingId(null);
-    setFormData({
-      icon: 'Award',
-      title: '',
-      subtitle: '',
-      description: '',
-      details: [],
-      gradient: 'from-blue-500 to-cyan-500',
-      color: 'blue',
-      order: 0,
-      link: '',
-    });
-    setDetailInput('');
-    setShowForm(true);
-  };
-
-  const handleEdit = (achievement: any) => {
-    console.log('📝 Editing achievement:', achievement);
-    setEditingId(achievement._id);
-    // Ensure all fields are properly populated
-    setFormData({
-      icon: achievement.icon || 'Award',
-      title: achievement.title || '',
-      subtitle: achievement.subtitle || '',
-      description: achievement.description || '',
-      details: achievement.details || [],
-      gradient: achievement.gradient || 'from-blue-500 to-cyan-500',
-      color: achievement.color || 'blue',
-      order: achievement.order || 0,
-      link: achievement.link || '',
-    });
-    setDetailInput('');
-    setShowForm(true);
-  };
-
-  const handleAddDetail = () => {
-    if (detailInput.trim() && !formData.details.includes(detailInput.trim())) {
-      setFormData((prev: any) => ({
-        ...prev,
-        details: [...prev.details, detailInput.trim()],
-      }));
-      setDetailInput('');
-    }
-  };
-
-  const handleRemoveDetail = (detail: string) => {
-    setFormData((prev: any) => ({
-      ...prev,
-      details: prev.details.filter((d: string) => d !== detail),
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage('');
-    try {
-      const token = localStorage.getItem('portfolioToken') || localStorage.getItem('adminToken');
-      if (!token) {
-        setMessage('❌ Authentication required');
-        setLoading(false);
-        return;
-      }
-
-      console.log('📤 Submitting achievement:', { editingId, formData });
-
-      if (editingId) {
-        console.log('🔄 Updating achievement:', editingId);
-        const response = await achievementAPI.updateAchievement(editingId, formData);
-        console.log('✅ Update response:', response);
-        setMessage('✅ Achievement updated successfully!');
-      } else {
-        console.log('➕ Creating new achievement');
-        const response = await achievementAPI.createAchievement(formData);
-        console.log('✅ Create response:', response);
-        setMessage('✅ Achievement created successfully!');
-      }
-
-      setShowForm(false);
-      setFormData({
-        icon: 'Award',
-        title: '',
-        subtitle: '',
-        description: '',
-        details: [],
-        gradient: 'from-blue-500 to-cyan-500',
-        color: 'blue',
-        order: 0,
-        link: '',
-      });
-      await loadAchievements();
-      setLoading(false);
-      setTimeout(() => setMessage(''), 3000);
-    } catch (error: any) {
-      console.error('❌ Submit error:', error);
-      setMessage(`❌ Error: ${error.message}`);
-      setLoading(false);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this achievement?')) return;
-
-    try {
-      const token = localStorage.getItem('portfolioToken') || localStorage.getItem('adminToken');
-      if (!token) {
-        setMessage('❌ Authentication required');
-        return;
-      }
-
-      console.log('🗑️ Deleting achievement:', id);
-      await achievementAPI.deleteAchievement(id);
-      console.log('✅ Achievement deleted successfully');
-      setMessage('✅ Achievement deleted successfully!');
-      loadAchievements();
-      setTimeout(() => setMessage(''), 3000);
-    } catch (error: any) {
-      console.error('❌ Delete error:', error);
-      setMessage(`❌ Error: ${error.message}`);
-    }
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="space-y-6"
-    >
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Leadership & Achievements</h2>
-        <button
-          onClick={handleAddNew}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-          Add Achievement
-        </button>
-      </div>
-
-      {message && (
-        <div className={`px-4 py-2 rounded text-sm ${message.includes('✅') ? 'bg-green-500/10 text-green-700 dark:text-green-400' : 'bg-red-500/10 text-red-700 dark:text-red-400'}`}>
-          {message}
-        </div>
-      )}
-
-      {showForm && (
-        <form ref={formRef} onSubmit={handleSubmit} className="bg-surface border border-border rounded-lg p-6 space-y-4">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Icon</label>
-              <select
-                value={formData.icon}
-                onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-                className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
-              >
-                {iconOptions.map((icon) => (
-                  <option key={icon} value={icon}>{icon}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">Gradient</label>
-              <select
-                value={formData.gradient}
-                onChange={(e) => setFormData({ ...formData, gradient: e.target.value })}
-                className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
-              >
-                {gradientOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <input
-            type="text"
-            placeholder="Title"
-            value={formData.title}
-            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
-            required
-          />
-          <input
-            type="text"
-            placeholder="Subtitle"
-            value={formData.subtitle}
-            onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
-            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
-            required
-          />
-          <textarea
-            placeholder="Description"
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            rows={3}
-            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
-            required
-          />
-
-          <div>
-            <label className="text-sm font-medium mb-2 block">Details</label>
-            <div className="flex gap-2 mb-2">
-              <input
-                type="text"
-                placeholder="Add detail and press Enter"
-                value={detailInput}
-                onChange={(e) => setDetailInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddDetail())}
-                className="flex-1 bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
-              />
-              <button
-                type="button"
-                onClick={handleAddDetail}
-                className="px-3 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded transition-colors"
-              >
-                Add
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {formData.details.map((detail) => (
-                <span key={detail} className="px-3 py-1 bg-blue-600 text-white rounded text-sm flex items-center gap-2">
-                  {detail}
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveDetail(detail)}
-                    className="text-xs hover:text-red-500"
-                  >
-                    ✕
-                  </button>
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <input
-            type="number"
-            placeholder="Order"
-            value={formData.order}
-            onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) })}
-            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
-          />
-
-          <input
-            type="url"
-            placeholder="Link (e.g., https://example.com)"
-            value={formData.link}
-            onChange={(e) => setFormData({ ...formData, link: e.target.value })}
-            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
-          />
-
-          <div className="flex gap-3">
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition-colors disabled:opacity-50"
-            >
-              {loading ? 'Saving...' : editingId ? 'Update' : 'Create'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowForm(false)}
-              className="px-4 py-2 bg-surface-3 hover:bg-surface-3 rounded-lg transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      )}
-
-      <div className="grid gap-4">
-        {achievements.map((achievement) => (
-          <div key={achievement._id} className="bg-surface border border-border rounded-lg p-4">
-            <div className={`h-1 bg-gradient-to-r ${achievement.gradient} rounded mb-3`} />
-            <h3 className="text-lg font-bold mb-1">{achievement.title}</h3>
-            <p className="text-muted-foreground text-sm mb-2">{achievement.subtitle}</p>
-            <p className="text-muted-foreground text-sm mb-3">{achievement.description}</p>
-            {achievement.details && achievement.details.length > 0 && (
-              <div className="mb-3 flex flex-wrap gap-1">
-                {achievement.details.map((detail: string) => (
-                  <span key={detail} className="px-2 py-1 bg-blue-600/30 rounded text-xs">
-                    {detail}
-                  </span>
-                ))}
-              </div>
-            )}
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleEdit(achievement)}
-                className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white hover:bg-blue-700 rounded text-sm transition-colors"
-              >
-                <Edit2 className="w-4 h-4" />
-                Edit
-              </button>
-              <button
-                onClick={() => handleDelete(achievement._id)}
-                className="flex items-center gap-1 px-3 py-1 bg-red-600 text-white hover:bg-red-700 rounded text-sm transition-colors"
-              >
-                <Trash2 className="w-4 h-4" />
-                Delete
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </motion.div>
-  );
-}
-
-// Certifications Section
-const EMPTY_CERTIFICATION = {
-  title: '',
-  issuer: '',
-  platform: '',
-  issueDate: '',
-  credentialId: '',
-  verifyUrl: '',
-  description: '',
-  modules: '',
-  order: 0,
+const isRead = (m: any) => Boolean(m?.isRead ?? m?.read);
+const fmtDateTime = (d?: string) => {
+  const t = d ? new Date(d) : null;
+  return t && !isNaN(t.getTime()) ? t.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '';
 };
 
-function CertificationsSection() {
-  const formRef = useRef<HTMLFormElement>(null);
-  const [certifications, setCertifications] = useState<any[]>([]);
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState(EMPTY_CERTIFICATION);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
+function MessagesView({ messages, loading, reload }: { messages: any[]; loading: boolean; reload: () => Promise<void> }) {
+  const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const [busy, setBusy] = useState<string | null>(null);
+  const shown = filter === 'unread' ? messages.filter((m) => !isRead(m)) : messages;
 
-  const inputClass = 'w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500';
-
-  useEffect(() => {
-    loadCertifications();
-  }, []);
-
-  useEffect(() => {
-    if (showForm) {
-      setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
-    }
-  }, [showForm]);
-
-  const loadCertifications = async () => {
+  const act = async (id: string, fn: () => Promise<any>, done: string) => {
+    setBusy(id);
     try {
-      const data = await certificationAPI.getAllCertifications();
-      setCertifications(Array.isArray(data?.data) ? data.data : []);
-    } catch (error) {
-      console.error('Failed to load certifications:', error);
-      setMessage('❌ Failed to load certifications');
-    }
-  };
-
-  const handleAddNew = () => {
-    setEditingId(null);
-    setFormData({ ...EMPTY_CERTIFICATION, order: certifications.length + 1 });
-    setShowForm(true);
-  };
-
-  const handleEdit = (cert: any) => {
-    setEditingId(cert._id);
-    setFormData({
-      title: cert.title || '',
-      issuer: cert.issuer || '',
-      platform: cert.platform || '',
-      issueDate: cert.issueDate || '',
-      credentialId: cert.credentialId || '',
-      verifyUrl: cert.verifyUrl || '',
-      description: cert.description || '',
-      modules: (cert.modules || []).join(', '),
-      order: cert.order || 0,
-    });
-    setShowForm(true);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage('');
-    const payload = {
-      ...formData,
-      order: Number(formData.order) || 0,
-      modules: formData.modules.split(',').map((m) => m.trim()).filter(Boolean),
-    };
-    try {
-      if (editingId) {
-        await certificationAPI.updateCertification(editingId, payload);
-        setMessage('✅ Certification updated successfully!');
-      } else {
-        await certificationAPI.createCertification(payload);
-        setMessage('✅ Certification created successfully!');
-      }
-      setShowForm(false);
-      setFormData(EMPTY_CERTIFICATION);
-      await loadCertifications();
-      setTimeout(() => setMessage(''), 3000);
-    } catch (error: any) {
-      setMessage(`❌ Error: ${error.message}`);
+      await fn();
+      await reload();
+      notify.success(done);
+    } catch (err) {
+      notify.error(errorText(err));
     } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this certification?')) return;
-    try {
-      await certificationAPI.deleteCertification(id);
-      setMessage('✅ Certification deleted successfully!');
-      loadCertifications();
-      setTimeout(() => setMessage(''), 3000);
-    } catch (error: any) {
-      setMessage(`❌ Error: ${error.message}`);
+      setBusy(null);
     }
   };
 
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="space-y-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Certifications</h2>
-        <button
-          onClick={handleAddNew}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-          Add Certification
-        </button>
-      </div>
-
-      {message && (
-        <div className={`px-4 py-2 rounded text-sm ${message.includes('✅') ? 'bg-green-500/10 text-green-700 dark:text-green-400' : 'bg-red-500/10 text-red-700 dark:text-red-400'}`}>
-          {message}
+    <div>
+      <PageHeader
+        title="Messages"
+        subtitle="Sent from the contact form on your site."
+        action={
+          <div className="inline-flex rounded-xl border border-border bg-surface-2 p-1">
+            {(['all', 'unread'] as const).map((f) => (
+              <button key={f} type="button" onClick={() => setFilter(f)} className={`px-3.5 py-1.5 rounded-lg text-sm font-medium capitalize transition-colors ${filter === f ? 'bg-surface text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+                {f}{f === 'unread' && ` (${messages.filter((m) => !isRead(m)).length})`}
+              </button>
+            ))}
+          </div>
+        }
+      />
+      {loading ? (
+        <div className="space-y-3">{[0, 1, 2].map((i) => <div key={i} className="panel h-28 animate-pulse" />)}</div>
+      ) : shown.length === 0 ? (
+        <EmptyState text={filter === 'unread' ? 'No unread messages.' : 'No messages yet.'} />
+      ) : (
+        <div className="space-y-3">
+          {shown.map((m) => (
+            <article key={m._id} className={`panel p-5 ${isRead(m) ? '' : 'border-l-4 border-l-violet-500'}`}>
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-semibold text-foreground flex items-center gap-2">
+                    {m.name || 'Unknown'}
+                    {!isRead(m) && <span className="chip text-[10px] font-mono uppercase text-neon-violet">New</span>}
+                  </p>
+                  <a href={`mailto:${m.email}`} className="text-sm text-muted-foreground hover:text-foreground break-all">{m.email}</a>
+                </div>
+                <span className="font-mono text-xs text-muted-foreground shrink-0">{fmtDateTime(m.createdAt)}</span>
+              </div>
+              <p className="mt-3 text-sm leading-relaxed text-foreground/90 whitespace-pre-line">{m.message}</p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <a href={`mailto:${m.email}?subject=${encodeURIComponent(`Re: ${m.subject || 'Your message'}`)}`} className="btn btn-outline py-2 px-3.5 text-sm">
+                  <Mail className="w-3.5 h-3.5" /> Reply
+                </a>
+                {!isRead(m) && (
+                  <button type="button" disabled={busy === m._id} onClick={() => act(m._id, () => messagesAPI.markAsRead(m._id), 'Marked as read')} className="btn btn-outline py-2 px-3.5 text-sm disabled:opacity-50">
+                    <Check className="w-3.5 h-3.5" /> Mark read
+                  </button>
+                )}
+                <button
+                  type="button"
+                  disabled={busy === m._id}
+                  onClick={() => window.confirm('Delete this message?') && act(m._id, () => messagesAPI.deleteMessage(m._id), 'Message deleted')}
+                  className="btn py-2 px-3.5 text-sm text-red-600 dark:text-red-400 border border-red-500/30 hover:bg-red-500/10 disabled:opacity-50"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Delete
+                </button>
+              </div>
+            </article>
+          ))}
         </div>
       )}
+    </div>
+  );
+}
 
-      {showForm && (
-        <form ref={formRef} onSubmit={handleSubmit} className="bg-surface border border-border rounded-lg p-6 space-y-4">
-          <div className="grid md:grid-cols-2 gap-4">
-            <input type="text" placeholder="Title" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} className={inputClass} required />
-            <input type="text" placeholder="Issuer (e.g., Google)" value={formData.issuer} onChange={(e) => setFormData({ ...formData, issuer: e.target.value })} className={inputClass} required />
-            <input type="text" placeholder="Platform (e.g., Coursera)" value={formData.platform} onChange={(e) => setFormData({ ...formData, platform: e.target.value })} className={inputClass} />
-            <input type="date" value={formData.issueDate} onChange={(e) => setFormData({ ...formData, issueDate: e.target.value })} className={inputClass} />
-            <input type="text" placeholder="Credential ID" value={formData.credentialId} onChange={(e) => setFormData({ ...formData, credentialId: e.target.value })} className={inputClass} />
-            <input type="url" placeholder="Verification URL" value={formData.verifyUrl} onChange={(e) => setFormData({ ...formData, verifyUrl: e.target.value })} className={inputClass} />
-          </div>
-          <textarea placeholder="Description" rows={3} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className={inputClass} />
-          <input type="text" placeholder="Modules / skills (comma separated)" value={formData.modules} onChange={(e) => setFormData({ ...formData, modules: e.target.value })} className={inputClass} />
-          <input type="number" placeholder="Order" value={formData.order} onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) || 0 })} className={inputClass} />
+function OverviewView({ portfolio, stats, counts, messages, go }: {
+  portfolio: any; stats: any; counts: Record<string, number>; messages: any[]; go: (v: View) => void;
+}) {
+  const unread = messages.filter((m) => !isRead(m)).length;
+  const tiles = [
+    { label: 'Portfolio views', value: stats?.viewCount ?? portfolio?.viewCount ?? 0, icon: Eye },
+    { label: 'Unread messages', value: unread, icon: Inbox, onClick: () => go('messages') },
+    { label: 'Projects', value: counts.projects ?? '–', icon: FolderGit2, onClick: () => go('projects') },
+    { label: 'Certifications', value: counts.certifications ?? '–', icon: BadgeCheck, onClick: () => go('certifications') },
+  ];
+  const updated = stats?.lastUpdated ? fmtDateTime(stats.lastUpdated) : '';
 
-          <div className="flex gap-3">
-            <button type="submit" disabled={loading} className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition-colors disabled:opacity-50">
-              {loading ? 'Saving...' : editingId ? 'Update' : 'Create'}
-            </button>
-            <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 bg-surface-3 hover:bg-surface-3 rounded-lg transition-colors">
-              Cancel
-            </button>
-          </div>
-        </form>
-      )}
-
-      <div className="grid md:grid-cols-2 gap-4">
-        {certifications.map((cert) => (
-          <div key={cert._id} className="bg-surface border border-border rounded-lg p-4">
-            <p className="text-xs text-muted-foreground mb-1">
-              {[cert.issuer, cert.platform, cert.issueDate].filter(Boolean).join(' · ')}
-            </p>
-            <h3 className="text-lg font-bold mb-2">{cert.title}</h3>
-            {cert.description && <p className="text-muted-foreground text-sm mb-3">{cert.description}</p>}
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                onClick={() => handleEdit(cert)}
-                className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white hover:bg-blue-700 rounded text-sm transition-colors"
-              >
-                <Edit2 className="w-4 h-4" />
-                Edit
-              </button>
-              <button
-                onClick={() => handleDelete(cert._id)}
-                className="flex items-center gap-1 px-3 py-1 bg-red-600 text-white hover:bg-red-700 rounded text-sm transition-colors"
-              >
-                <Trash2 className="w-4 h-4" />
-                Delete
-              </button>
-              {cert.verifyUrl && (
-                <a href={cert.verifyUrl} target="_blank" rel="noopener noreferrer" className="ml-auto flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline">
-                  Verify
-                  <ExternalLink className="w-4 h-4" />
-                </a>
-              )}
+  return (
+    <div>
+      <PageHeader title={`Welcome back${portfolio?.fullName ? `, ${portfolio.fullName.split(' ')[0]}` : ''}`} subtitle={updated ? `Content last updated ${updated}` : 'Manage everything on your portfolio from here.'} />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {tiles.map(({ label, value, icon: Icon, onClick }) => (
+          <button key={label} type="button" onClick={onClick} disabled={!onClick} className="panel panel-interactive p-5 text-left disabled:cursor-default disabled:hover:transform-none">
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">{label}</span>
+              <Icon className="w-4 h-4 text-neon-cyan" />
             </div>
-          </div>
+            <p className="mt-3 font-display text-3xl font-bold text-gradient">{value}</p>
+          </button>
         ))}
       </div>
-    </motion.div>
+
+      <div className="mt-5 grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <section className="panel p-6 lg:col-span-2">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-display text-lg font-semibold text-foreground">Recent messages</h2>
+            <button type="button" onClick={() => go('messages')} className="text-sm font-medium text-neon-violet hover:underline">View all</button>
+          </div>
+          {messages.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No messages yet.</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {messages.slice(0, 5).map((m) => (
+                <li key={m._id} className="py-3 flex items-start gap-3">
+                  <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${isRead(m) ? 'bg-surface-3' : 'bg-violet-500'}`} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-foreground">{m.name}</p>
+                    <p className="text-sm text-muted-foreground truncate">{m.message}</p>
+                  </div>
+                  <span className="font-mono text-[11px] text-muted-foreground shrink-0">{fmtDateTime(m.createdAt).split(',')[0]}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="panel p-6">
+          <h2 className="font-display text-lg font-semibold text-foreground mb-4">Quick actions</h2>
+          <div className="grid gap-2">
+            {([
+              ['profile', 'Edit profile & links', User],
+              ['projects', 'Add a project', FolderGit2],
+              ['certifications', 'Add a certification', BadgeCheck],
+              ['experience', 'Update experience', Briefcase],
+            ] as const).map(([view, label, Icon]) => (
+              <button key={view} type="button" onClick={() => go(view)} className="flex items-center gap-3 rounded-xl border border-border px-3.5 py-3 text-sm font-medium text-foreground hover:border-violet-500/50 hover:bg-surface-2 transition-colors text-left">
+                <Icon className="w-4 h-4 text-neon-cyan" /> {label}
+              </button>
+            ))}
+            <a href="/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-xl border border-border px-3.5 py-3 text-sm font-medium text-foreground hover:border-violet-500/50 hover:bg-surface-2 transition-colors">
+              <ArrowUpRight className="w-4 h-4 text-neon-cyan" /> Open live site
+            </a>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Shell                                                               */
+/* ------------------------------------------------------------------ */
+
+type View = 'overview' | 'profile' | 'about' | 'projects' | 'experience' | 'achievements' | 'certifications' | 'skills' | 'messages';
+
+const NAV: { id: View; label: string; icon: typeof User; group: string }[] = [
+  { id: 'overview', label: 'Overview', icon: LayoutDashboard, group: 'General' },
+  { id: 'messages', label: 'Messages', icon: Inbox, group: 'General' },
+  { id: 'profile', label: 'Profile', icon: User, group: 'Content' },
+  { id: 'about', label: 'About & stats', icon: FileText, group: 'Content' },
+  { id: 'projects', label: 'Projects', icon: FolderGit2, group: 'Content' },
+  { id: 'experience', label: 'Experience', icon: Briefcase, group: 'Content' },
+  { id: 'achievements', label: 'Achievements', icon: Trophy, group: 'Content' },
+  { id: 'certifications', label: 'Certifications', icon: BadgeCheck, group: 'Content' },
+  { id: 'skills', label: 'Skills', icon: Layers, group: 'Content' },
+];
+
+const COLLECTIONS: Partial<Record<View, CollectionConfig>> = {
+  projects: projectsConfig,
+  experience: experienceConfig,
+  achievements: achievementsConfig,
+  certifications: certificationsConfig,
+  skills: skillsConfig,
+};
+
+const readView = (): View => {
+  const hash = window.location.hash.slice(1) as View;
+  return NAV.some((n) => n.id === hash) ? hash : 'overview';
+};
+
+export default function AdminDashboard() {
+  const [view, setView] = useState<View>(readView);
+  const [portfolio, setPortfolio] = useState<any>(null);
+  const [stats, setStats] = useState<any>(null);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [messagesLoading, setMessagesLoading] = useState(true);
+  const [counts, setCounts] = useState<Record<string, number>>({});
+
+  const go = (next: View) => {
+    setView(next);
+    window.history.replaceState(null, '', `#${next}`);
+    window.scrollTo({ top: 0 });
+  };
+
+  const loadMessages = useCallback(async () => {
+    try {
+      const res = await messagesAPI.getAllMessages(1, 500);
+      const list = Array.isArray(res?.data) ? res.data : [];
+      setMessages([...list].sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))));
+    } catch (err) {
+      notify.error(`Couldn't load messages: ${errorText(err)}`);
+    } finally {
+      setMessagesLoading(false);
+    }
+  }, []);
+
+  const loadSummary = useCallback(async () => {
+    const [p, s, projects, certs] = await Promise.allSettled([
+      portfolioAPI.getPortfolio(),
+      portfolioAPI.getStats(),
+      projectAPI.getAllProjects(),
+      certificationAPI.getAllCertifications(),
+    ]);
+    if (p.status === 'fulfilled') setPortfolio(p.value?.data ?? p.value);
+    if (s.status === 'fulfilled') setStats(s.value?.data ?? s.value);
+    setCounts({
+      projects: projects.status === 'fulfilled' ? projects.value?.data?.length ?? 0 : NaN,
+      certifications: certs.status === 'fulfilled' ? certs.value?.data?.length ?? 0 : NaN,
+    });
+  }, []);
+
+  useEffect(() => {
+    loadSummary();
+    loadMessages();
+  }, [loadSummary, loadMessages]);
+
+  useEffect(() => {
+    const onHash = () => setView(readView());
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+
+  const handleLogout = () => {
+    ['portfolioToken', 'authToken', 'adminToken'].forEach((k) => localStorage.removeItem(k));
+    window.location.href = '/login';
+  };
+
+  const unread = messages.filter((m) => !isRead(m)).length;
+  const collection = COLLECTIONS[view];
+  const groups = [...new Set(NAV.map((n) => n.group))];
+
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Sidebar (desktop) */}
+      <aside className="hidden lg:flex fixed inset-y-0 left-0 w-64 flex-col border-r border-border bg-surface">
+        <div className="flex items-center gap-2.5 px-5 h-16 border-b border-border">
+          <span className="grid place-items-center w-9 h-9 rounded-xl neon-border font-display font-bold text-sm"><span className="text-gradient">AR</span></span>
+          <div className="leading-none">
+            <p className="font-display font-semibold text-foreground">Admin</p>
+            <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-muted-foreground mt-1">control panel</p>
+          </div>
+        </div>
+        <nav className="flex-1 overflow-y-auto p-3" aria-label="Admin sections">
+          {groups.map((group) => (
+            <div key={group} className="mb-4">
+              <p className="px-3 mb-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">{group}</p>
+              {NAV.filter((n) => n.group === group).map(({ id, label, icon: Icon }) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => go(id)}
+                  aria-current={view === id ? 'page' : undefined}
+                  className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${view === id ? 'bg-surface-2 text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-surface-2/60'}`}
+                >
+                  {view === id && <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-gradient-to-b from-neon-cyan to-neon-violet" />}
+                  <Icon className="w-4 h-4" />
+                  {label}
+                  {id === 'messages' && unread > 0 && (
+                    <span className="ml-auto min-w-5 h-5 px-1.5 grid place-items-center rounded-full bg-violet-600 text-white text-[11px] font-semibold">{unread}</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          ))}
+        </nav>
+        <div className="p-3 border-t border-border space-y-1">
+          <a href="/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-surface-2/60">
+            <ArrowUpRight className="w-4 h-4" /> View site
+          </a>
+          <button type="button" onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-500/10">
+            <LogOut className="w-4 h-4" /> Log out
+          </button>
+        </div>
+      </aside>
+
+      <div className="lg:pl-64">
+        {/* Top bar */}
+        <header className="sticky top-0 z-30 glass border-x-0 border-t-0">
+          <div className="flex items-center justify-between gap-3 px-4 sm:px-8 h-16">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="lg:hidden grid place-items-center w-9 h-9 rounded-xl neon-border font-display font-bold text-sm shrink-0"><span className="text-gradient">AR</span></span>
+              <p className="font-mono text-xs text-muted-foreground truncate">
+                admin <span className="text-neon-cyan">/</span> {NAV.find((n) => n.id === view)?.label.toLowerCase()}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <button type="button" onClick={handleLogout} className="icon-btn lg:hidden" aria-label="Log out"><LogOut className="w-[18px] h-[18px]" /></button>
+            </div>
+          </div>
+          {/* Section switcher (mobile/tablet) */}
+          <nav className="lg:hidden flex gap-1 overflow-x-auto px-3 pb-2" aria-label="Admin sections">
+            {NAV.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => go(id)}
+                className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium ${view === id ? 'bg-surface-2 text-foreground border border-border' : 'text-muted-foreground'}`}
+              >
+                <Icon className="w-3.5 h-3.5" /> {label}
+                {id === 'messages' && unread > 0 && <span className="ml-0.5 text-[11px] font-semibold text-neon-violet">{unread}</span>}
+              </button>
+            ))}
+          </nav>
+        </header>
+
+        <main className="px-4 sm:px-8 py-8 max-w-6xl">
+          <motion.div key={view} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
+            {view === 'overview' && <OverviewView portfolio={portfolio} stats={stats} counts={counts} messages={messages} go={go} />}
+            {view === 'messages' && <MessagesView messages={messages} loading={messagesLoading} reload={loadMessages} />}
+            {view === 'profile' && (portfolio ? <ProfileView portfolio={portfolio} onSaved={setPortfolio} /> : <div className="panel h-64 animate-pulse" />)}
+            {view === 'about' && (portfolio ? <AboutView portfolio={portfolio} onSaved={setPortfolio} /> : <div className="panel h-64 animate-pulse" />)}
+            {collection && <CollectionManager key={view} config={collection} onChanged={loadSummary} />}
+          </motion.div>
+        </main>
+      </div>
+
+      <Toasts />
+    </div>
   );
 }

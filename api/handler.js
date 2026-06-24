@@ -34,6 +34,12 @@ const requireAuth = (req) => {
   return decoded;
 };
 
+// Fields clients may not set directly on create.
+const withoutServerFields = (body = {}) => {
+  const { _id, createdAt, updatedAt, ...rest } = body || {};
+  return rest;
+};
+
 // Extract ID from URL
 const getIdFromUrl = (pathname, baseRoute) => {
   const parts = pathname.split('/');
@@ -89,7 +95,7 @@ export async function handleSkills(req, res, pathname) {
       return res.status(400).json({ success: false, message: 'Category and skills required' });
     }
 
-    const newSkill = await skillsStorage.create({ category, skills: skillsList, order: order || 0 });
+    const newSkill = await skillsStorage.create({ category, skills: skillsList, order: Number(order) || 0 });
     return res.status(201).json({ success: true, message: 'Skill created', data: newSkill });
   }
 
@@ -133,14 +139,12 @@ export async function handleProjects(req, res, pathname) {
     const user = requireAuth(req);
     if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
 
-    const { title, description, techStack, imageUrl, githubLink, liveLink } = req.body;
-    if (!title || !description || !imageUrl) {
-      return res.status(400).json({ success: false, message: 'Missing required fields' });
+    const { title, description } = req.body || {};
+    if (!title || !description) {
+      return res.status(400).json({ success: false, message: 'Title and description are required' });
     }
 
-    const newProject = await projectsStorage.create({
-      title, description, techStack, imageUrl, githubLink, liveLink, order: 0
-    });
+    const newProject = await projectsStorage.create({ order: 0, ...withoutServerFields(req.body) });
     return res.status(201).json({ success: true, message: 'Project created', data: newProject });
   }
 
@@ -184,14 +188,12 @@ export async function handleExperience(req, res, pathname) {
     const user = requireAuth(req);
     if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
 
-    const { title, company, location, description, startDate, endDate, isCurrentRole } = req.body;
+    const { title, company, startDate } = req.body || {};
     if (!title || !company || !startDate) {
-      return res.status(400).json({ success: false, message: 'Missing required fields' });
+      return res.status(400).json({ success: false, message: 'Role, company and start date are required' });
     }
 
-    const newExperience = await experiencesStorage.create({
-      title, company, location, description, startDate, endDate, isCurrentRole
-    });
+    const newExperience = await experiencesStorage.create(withoutServerFields(req.body));
     return res.status(201).json({ success: true, message: 'Experience created', data: newExperience });
   }
 
@@ -235,14 +237,12 @@ export async function handleAchievements(req, res, pathname) {
     const user = requireAuth(req);
     if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
 
-    const { icon, title, subtitle, description, details, gradient, color, order } = req.body;
-    if (!icon || !title || !description) {
-      return res.status(400).json({ success: false, message: 'Missing required fields' });
+    const { title, description } = req.body || {};
+    if (!title || !description) {
+      return res.status(400).json({ success: false, message: 'Title and description are required' });
     }
 
-    const newAchievement = await achievementsStorage.create({
-      icon, title, subtitle, description, details, gradient, color, order: order || 0
-    });
+    const newAchievement = await achievementsStorage.create({ icon: 'Award', order: 0, ...withoutServerFields(req.body) });
     return res.status(201).json({ success: true, message: 'Achievement created', data: newAchievement });
   }
 
@@ -380,6 +380,10 @@ export async function handleAuth(req, res, path) {
   }
 
   if (path === '/api/auth/register' && req.method === 'POST') {
+    if ((await usersStorage.findAll()).length > 0) {
+      return res.status(403).json({ success: false, message: 'Registration is closed' });
+    }
+
     const { name, email, password } = req.body;
     if (!name || !email || !password) {
       return res.status(400).json({ success: false, message: 'Name, email, password required' });
@@ -481,7 +485,7 @@ export async function handleContact(req, res, pathname) {
   }
 
   if (req.method === 'GET') {
-    const messages = await contactStorage.findAll();
+    const messages = (await contactStorage.findAll()).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
     const limit = parseInt(req.query?.limit || 10);
     const page = parseInt(req.query?.page || 1);
     const start = (page - 1) * limit;

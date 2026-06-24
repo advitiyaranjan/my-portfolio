@@ -1,4 +1,5 @@
 import { motion } from 'motion/react';
+import { ScrambleText } from './ScrambleText';
 
 interface SectionHeadingProps {
   index: string;
@@ -23,7 +24,7 @@ export function SectionHeading({ index, eyebrow, title, highlight, subtitle }: S
         <span className="hud-label text-muted-foreground">{eyebrow}</span>
       </div>
       <h2 className="font-display text-4xl sm:text-5xl font-bold tracking-tight text-foreground">
-        {title} {highlight && <span className="text-gradient">{highlight}</span>}
+        {title} {highlight && <ScrambleText text={highlight} className="text-gradient" delay={150} />}
       </h2>
       {subtitle && <p className="mt-4 text-base sm:text-lg text-muted-foreground">{subtitle}</p>}
     </motion.div>

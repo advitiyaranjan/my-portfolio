@@ -10,11 +10,13 @@ import { Contact } from '../components/Contact';
 import { Footer } from '../components/Footer';
 import { ScrollToTop } from '../components/ScrollToTop';
 import { Backdrop } from '../components/Backdrop';
+import { FxLayer } from '../components/FxLayer';
 
 export default function MainApp() {
   return (
     <div className="relative min-h-screen text-foreground">
       <Backdrop />
+      <FxLayer />
       <Navbar />
 
       <main className="relative z-10">

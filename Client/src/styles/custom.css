@@ -218,6 +218,29 @@ body {
   }
 }
 
+/* ---------- Interactive effects (enabled by FxLayer on mouse devices) ---------- */
+html.fx-cursor,
+html.fx-cursor * {
+  cursor: none !important;
+}
+html.fx-cursor :is(input, textarea, [contenteditable='true']) {
+  cursor: text !important;
+}
+
+:root {
+  --spotlight: rgba(109, 40, 217, 0.08);
+}
+.dark {
+  --spotlight: rgba(34, 211, 238, 0.08);
+}
+.fx-spotlight .panel {
+  background-image: radial-gradient(420px circle at var(--mx, -999px) var(--my, -999px), var(--spotlight), transparent 55%);
+}
+
+[data-magnetic] {
+  transition: translate 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.2s ease, box-shadow 0.25s ease, background-position 0.5s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
 /* ---------- Global backdrop (one fixed layer for the whole page) ---------- */
 .backdrop-grid {
   background-image:
