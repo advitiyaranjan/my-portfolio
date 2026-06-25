@@ -35,7 +35,6 @@ export function FxLayer() {
   const overlayRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const field = fieldRef.current;
     const overlay = overlayRef.current;
     const fctx = field?.getContext('2d');
@@ -43,7 +42,7 @@ export function FxLayer() {
     if (!field || !overlay || !fctx || !octx) return;
 
     const root = document.documentElement;
-    const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    const finePointer = window.matchMedia('(any-hover: hover) and (any-pointer: fine)').matches;
     if (finePointer) root.classList.add('fx-cursor', 'fx-spotlight');
 
     /* ---------- sizing & theme ---------- */
@@ -155,7 +154,7 @@ export function FxLayer() {
 
     /* ---------- events ---------- */
     const onMove = (e: PointerEvent) => {
-      if (e.pointerType !== 'mouse' && e.pointerType !== 'pen') return;
+      if (e.pointerType === 'touch') return;
       if (!pointer.active) {
         lens.x = ring.x = e.clientX;
         lens.y = ring.y = e.clientY;

@@ -75,8 +75,20 @@ export function Navbar() {
   }, []);
 
   const scrollToSection = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
-    setIsMobileMenuOpen(false);
+    const go = () => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      // Explicit window scroll: scrollIntoView gets cancelled on mobile browsers when the menu collapses mid-scroll.
+      const top = id === 'home' ? 0 : el.getBoundingClientRect().top + window.scrollY - 88;
+      window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+      history.replaceState(null, '', `#${id}`);
+    };
+    if (isMobileMenuOpen) {
+      setIsMobileMenuOpen(false);
+      window.setTimeout(go, 280); // wait for the menu collapse animation to finish
+    } else {
+      go();
+    }
   };
 
   return (
