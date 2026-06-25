@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   LayoutDashboard, User, FileText, FolderGit2, Briefcase, Trophy, BadgeCheck, Layers, Inbox,
@@ -320,15 +320,23 @@ function CollectionManager({ config, onChanged }: { config: CollectionConfig; on
     const original = editing?.record;
     const payload = config.toPayload ? config.toPayload(values, original) : formToPayload(config.fields, values);
     try {
+      // Apply the saved record locally so the list updates instantly, without waiting on a re-fetch.
+      const upsert = (saved: any) => setItems((list) => {
+        const next = list.some((r) => r._id === saved._id)
+          ? list.map((r) => (r._id === saved._id ? saved : r))
+          : [...list, saved];
+        return config.sort ? [...next].sort(config.sort) : next;
+      });
       if (original?._id) {
-        await config.api.update(original._id, payload);
+        const res = await config.api.update(original._id, payload);
+        upsert(res?.data ?? { ...original, ...payload });
         notify.success(`${config.singular} updated`);
       } else {
-        await config.api.create(payload);
+        const res = await config.api.create(payload);
+        if (res?.data?._id) upsert(res.data); else await load();
         notify.success(`${config.singular} added`);
       }
       setEditing(null);
-      await load();
       onChanged();
     } catch (err) {
       notify.error(`Save failed: ${errorText(err)}`);
@@ -921,16 +929,17 @@ const fmtDateTime = (d?: string) => {
   return t && !isNaN(t.getTime()) ? t.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '';
 };
 
-function MessagesView({ messages, loading, reload }: { messages: any[]; loading: boolean; reload: () => Promise<void> }) {
+function MessagesView({ messages, loading, setMessages }: { messages: any[]; loading: boolean; setMessages: Dispatch<SetStateAction<any[]>> }) {
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const [busy, setBusy] = useState<string | null>(null);
   const shown = filter === 'unread' ? messages.filter((m) => !isRead(m)) : messages;
 
-  const act = async (id: string, fn: () => Promise<any>, done: string) => {
+  // Each action updates the shared list right away, so the inbox, badges and overview change instantly.
+  const act = async (id: string, fn: () => Promise<any>, apply: (list: any[]) => any[], done: string) => {
     setBusy(id);
     try {
       await fn();
-      await reload();
+      setMessages(apply);
       notify.success(done);
     } catch (err) {
       notify.error(errorText(err));
@@ -978,14 +987,14 @@ function MessagesView({ messages, loading, reload }: { messages: any[]; loading:
                   <Mail className="w-3.5 h-3.5" /> Reply
                 </a>
                 {!isRead(m) && (
-                  <button type="button" disabled={busy === m._id} onClick={() => act(m._id, () => messagesAPI.markAsRead(m._id), 'Marked as read')} className="btn btn-outline py-2 px-3.5 text-sm disabled:opacity-50">
+                  <button type="button" disabled={busy === m._id} onClick={() => act(m._id, () => messagesAPI.markAsRead(m._id), (list) => list.map((x) => (x._id === m._id ? { ...x, isRead: true, read: true } : x)), 'Marked as read')} className="btn btn-outline py-2 px-3.5 text-sm disabled:opacity-50">
                     <Check className="w-3.5 h-3.5" /> Mark read
                   </button>
                 )}
                 <button
                   type="button"
                   disabled={busy === m._id}
-                  onClick={() => window.confirm('Delete this message?') && act(m._id, () => messagesAPI.deleteMessage(m._id), 'Message deleted')}
+                  onClick={() => window.confirm('Delete this message?') && act(m._id, () => messagesAPI.deleteMessage(m._id), (list) => list.filter((x) => x._id !== m._id), 'Message deleted')}
                   className="btn py-2 px-3.5 text-sm text-red-600 dark:text-red-400 border border-red-500/30 hover:bg-red-500/10 disabled:opacity-50"
                 >
                   <Trash2 className="w-3.5 h-3.5" /> Delete
@@ -1243,7 +1252,7 @@ export default function AdminDashboard() {
         <main className="px-4 sm:px-8 py-8 max-w-6xl">
           <motion.div key={view} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
             {view === 'overview' && <OverviewView portfolio={portfolio} stats={stats} counts={counts} messages={messages} go={go} />}
-            {view === 'messages' && <MessagesView messages={messages} loading={messagesLoading} reload={loadMessages} />}
+            {view === 'messages' && <MessagesView messages={messages} loading={messagesLoading} setMessages={setMessages} />}
             {view === 'profile' && (portfolio ? <ProfileView portfolio={portfolio} onSaved={setPortfolio} /> : <div className="panel h-64 animate-pulse" />)}
             {view === 'about' && (portfolio ? <AboutView portfolio={portfolio} onSaved={setPortfolio} /> : <div className="panel h-64 animate-pulse" />)}
             {collection && <CollectionManager key={view} config={collection} onChanged={loadSummary} />}

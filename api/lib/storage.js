@@ -50,7 +50,7 @@ class JSONStorage {
       if (useBlobStorage) {
         // A single blob lookup per read: a missing blob simply means an empty collection.
         // (Creating it up front doubled the round-trips on every request, slowing cold starts and login.)
-        const result = await get(this.blobPath, { access: blobAccess });
+        const result = await get(this.blobPath, { access: blobAccess, useCache: false });
         if (!result || result.statusCode !== 200 || !result.stream) {
           return [];
         }
