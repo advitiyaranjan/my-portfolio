@@ -3,6 +3,7 @@ import { projectAPI } from '@/utils/api';
 import { useApiList } from './hooks/useApiList';
 import { SectionHeading } from './SectionHeading';
 import { Reveal } from './Reveal';
+import { externalUrl } from '../lib/url';
 
 interface Project {
   _id?: string;
@@ -58,8 +59,8 @@ export function Projects() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {projects.map((project, index) => {
               const [from, to] = accentFor(project.gradient);
-              const live = isRealLink(project.liveLink) ? project.liveLink : undefined;
-              const github = isRealLink(project.githubLink) ? project.githubLink : undefined;
+              const live = isRealLink(project.liveLink) ? externalUrl(project.liveLink) : undefined;
+              const github = isRealLink(project.githubLink) ? externalUrl(project.githubLink) : undefined;
               const tech = project.techStack || [];
 
               return (

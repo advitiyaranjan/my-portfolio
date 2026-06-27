@@ -1,5 +1,6 @@
 import { Github, Linkedin, Twitter, Mail, Code2 } from 'lucide-react';
 import { usePortfolio } from './hooks/usePortfolio';
+import { externalUrl } from '../lib/url';
 
 const QUICK_LINKS = [
   { label: 'About', id: 'about' },
@@ -37,7 +38,7 @@ export function Footer() {
               {socials.map(({ Icon, href, label }) => (
                 <a
                   key={label}
-                  href={href}
+                  href={externalUrl(href)}
                   target={href?.startsWith('mailto:') ? undefined : '_blank'}
                   rel="noopener noreferrer"
                   className="icon-btn w-9 h-9"

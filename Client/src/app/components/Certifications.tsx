@@ -3,6 +3,7 @@ import { certificationAPI } from '@/utils/api';
 import { useApiList } from './hooks/useApiList';
 import { SectionHeading } from './SectionHeading';
 import { Reveal } from './Reveal';
+import { externalUrl } from '../lib/url';
 
 interface Certification {
   _id?: string;
@@ -97,7 +98,7 @@ export function Certifications() {
                     </span>
                     {cert.verifyUrl && (
                       <a
-                        href={cert.verifyUrl}
+                        href={externalUrl(cert.verifyUrl)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="shrink-0 inline-flex items-center gap-1 text-sm font-medium text-neon-violet hover:underline underline-offset-4"

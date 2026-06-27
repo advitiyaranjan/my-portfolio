@@ -4,6 +4,7 @@ import { useApiList } from './hooks/useApiList';
 import { SectionHeading } from './SectionHeading';
 import { Reveal } from './Reveal';
 import { accentFor } from './Projects';
+import { externalUrl } from '../lib/url';
 
 interface Achievement {
   _id: string;
@@ -90,7 +91,7 @@ export function LeadershipAchievements() {
                 <Reveal key={achievement._id || achievement.title} delay={(index % 2) * 0.08} className="h-full">
                   {achievement.link ? (
                     <a
-                      href={achievement.link}
+                      href={externalUrl(achievement.link)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="panel panel-interactive group block h-full p-6 sm:p-7"

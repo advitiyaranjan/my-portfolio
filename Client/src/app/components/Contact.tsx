@@ -5,6 +5,7 @@ import { contactAPI } from '@/utils/api';
 import { usePortfolio } from './hooks/usePortfolio';
 import { SectionHeading } from './SectionHeading';
 import { Reveal } from './Reveal';
+import { externalUrl } from '../lib/url';
 
 const MIN_MESSAGE_LENGTH = 10;
 
@@ -106,7 +107,7 @@ export function Contact() {
                 {socials.length > 0 && (
                   <div className="mt-5 flex gap-2.5">
                     {socials.map(({ Icon, href, label }) => (
-                      <a key={label} href={href} target="_blank" rel="noopener noreferrer" className="icon-btn" aria-label={label} title={label}>
+                      <a key={label} href={externalUrl(href)} target="_blank" rel="noopener noreferrer" className="icon-btn" aria-label={label} title={label}>
                         <Icon className="w-[18px] h-[18px]" />
                       </a>
                     ))}
