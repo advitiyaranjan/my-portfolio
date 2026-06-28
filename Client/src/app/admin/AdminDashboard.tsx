@@ -2,10 +2,11 @@ import { useCallback, useEffect, useMemo, useState, type Dispatch, type SetState
 import { AnimatePresence, motion } from 'motion/react';
 import {
   LayoutDashboard, User, FileText, FolderGit2, Briefcase, Trophy, BadgeCheck, Layers, Inbox,
-  LogOut, ArrowUpRight, Plus, Pencil, Trash2, X, Check, AlertCircle, Eye, Mail, Save, Loader2,
+  LogOut, ArrowUpRight, Plus, Pencil, Trash2, X, Check, AlertCircle, Eye, Mail, Save, Loader2, Sparkles,
 } from 'lucide-react';
 import {
-  portfolioAPI, messagesAPI, projectAPI, experienceAPI, skillAPI, achievementAPI, certificationAPI,
+  portfolioAPI, messagesAPI, projectAPI, experienceAPI, skillAPI, achievementAPI, certificationAPI, aiAPI,
+  type AiAction, type AiCollection, type AiOperation, type AiPlan,
 } from '@/utils/api';
 import { ThemeToggle } from '../components/Navbar';
 import { accentFor } from '../components/Projects';
@@ -1064,6 +1065,7 @@ function OverviewView({ portfolio, stats, counts, messages, go }: {
           <h2 className="font-display text-lg font-semibold text-foreground mb-4">Quick actions</h2>
           <div className="grid gap-2">
             {([
+              ['assistant', 'Ask the AI assistant', Sparkles],
               ['profile', 'Edit profile & links', User],
               ['projects', 'Add a project', FolderGit2],
               ['certifications', 'Add a certification', BadgeCheck],
@@ -1084,14 +1086,262 @@ function OverviewView({ portfolio, stats, counts, messages, go }: {
 }
 
 /* ------------------------------------------------------------------ */
+/* AI assistant (Gemini)                                               */
+/* ------------------------------------------------------------------ */
+
+const COLLECTION_LABEL: Record<AiCollection, string> = {
+  projects: 'Project', experience: 'Experience', achievements: 'Achievement',
+  certifications: 'Certification', skills: 'Skill category', portfolio: 'Profile',
+};
+
+const ACTION_STYLE: Record<AiAction, string> = {
+  create: 'text-emerald-600 dark:text-emerald-400 border-emerald-500/40',
+  update: 'text-neon-cyan border-cyan-500/40',
+  delete: 'text-red-600 dark:text-red-400 border-red-500/40',
+};
+
+const AI_EXAMPLES = [
+  'Change my headline to "Full-stack developer & product thinker"',
+  'Add Docker and Kubernetes to my DevOps skills',
+  'Add a certification: "Google Cloud Digital Leader" from Google, issued March 2026',
+  'Rewrite my hero bio to be shorter and punchier',
+];
+
+const showValue = (v: unknown): string => {
+  if (v === null || v === undefined || v === '') return '—';
+  if (Array.isArray(v)) return v.map((x) => (x && typeof x === 'object' ? Object.values(x).filter(Boolean).join(' · ') : String(x))).join('\n');
+  if (typeof v === 'object') return Object.entries(v as object).map(([k, x]) => `${k}: ${x}`).join('\n');
+  return String(v);
+};
+
+// Field-level rows for the preview. Profile sub-objects are merged server-side, so show only changed keys.
+function diffRows(op: AiOperation) {
+  const before = (op.before || {}) as Record<string, any>;
+  const rows: { key: string; before?: unknown; after: unknown }[] = [];
+  for (const [key, after] of Object.entries(op.data || {})) {
+    if (op.collection === 'portfolio' && ['education', 'socialLinks', 'stats'].includes(key) && after && typeof after === 'object') {
+      for (const [sub, v] of Object.entries(after)) rows.push({ key: `${key}.${sub}`, before: before[key]?.[sub], after: v });
+    } else {
+      rows.push({ key, before: before[key], after });
+    }
+  }
+  return rows;
+}
+
+const opTitle = (op: AiOperation) => {
+  const r = (op.before || op.data || {}) as Record<string, any>;
+  return op.collection === 'portfolio' ? 'Your profile' : r.title || r.category || 'Untitled';
+};
+
+function OperationCard({ op, checked, onToggle }: { op: AiOperation; checked: boolean; onToggle: () => void }) {
+  const rows = op.action === 'delete' ? [] : diffRows(op);
+  return (
+    <article className={`panel p-5 transition-opacity ${checked ? '' : 'opacity-50'}`}>
+      <label className="flex items-start gap-3 cursor-pointer select-none">
+        <input type="checkbox" checked={checked} onChange={onToggle} className="w-4 h-4 mt-1 accent-violet-600" />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={`chip text-[10px] font-mono uppercase border ${ACTION_STYLE[op.action]}`}>{op.action}</span>
+            <span className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">{COLLECTION_LABEL[op.collection]}</span>
+          </div>
+          <h3 className="mt-1.5 font-display text-base font-semibold text-foreground">{opTitle(op)}</h3>
+          {op.reason && <p className="mt-0.5 text-sm text-muted-foreground">{op.reason}</p>}
+        </div>
+      </label>
+      {rows.length > 0 && (
+        <dl className="mt-4 space-y-3 border-t border-border pt-4">
+          {rows.map((row) => (
+            <div key={row.key} className="grid grid-cols-1 sm:grid-cols-[9rem_1fr] gap-1 sm:gap-3 text-sm">
+              <dt className="font-mono text-xs text-muted-foreground pt-0.5 break-all">{row.key}</dt>
+              <dd className="min-w-0 space-y-1">
+                {op.action === 'update' && (
+                  <p className="whitespace-pre-line break-words text-red-600/80 dark:text-red-400/80 line-through decoration-red-500/40">{showValue(row.before)}</p>
+                )}
+                <p className="whitespace-pre-line break-words text-foreground">{showValue(row.after)}</p>
+              </dd>
+            </div>
+          ))}
+        </dl>
+      )}
+    </article>
+  );
+}
+
+interface AiTurn { instruction: string; summary: string; applied?: number }
+
+function AssistantView({ onApplied }: { onApplied: (portfolio?: any) => void }) {
+  const [status, setStatus] = useState<{ enabled: boolean; model: string } | null>(null);
+  const [instruction, setInstruction] = useState('');
+  const [plan, setPlan] = useState<(AiPlan & { instruction: string }) | null>(null);
+  const [selected, setSelected] = useState<boolean[]>([]);
+  const [thinking, setThinking] = useState(false);
+  const [applying, setApplying] = useState(false);
+  const [history, setHistory] = useState<AiTurn[]>([]);
+
+  useEffect(() => {
+    aiAPI.getStatus()
+      .then((res) => setStatus(res.data))
+      .catch(() => setStatus({ enabled: false, model: '' }));
+  }, []);
+
+  const ask = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const text = instruction.trim();
+    if (!text || thinking) return;
+    setThinking(true);
+    setPlan(null);
+    try {
+      const res = await aiAPI.plan(text, history.map(({ instruction: i, summary }) => ({ instruction: i, summary })));
+      setPlan({ ...res.data, instruction: text });
+      setSelected(res.data.operations.map(() => true));
+    } catch (err) {
+      notify.error(errorText(err));
+    } finally {
+      setThinking(false);
+    }
+  };
+
+  const apply = async () => {
+    if (!plan) return;
+    const ops = plan.operations.filter((_, i) => selected[i]);
+    if (ops.some((o) => o.action === 'delete') && !window.confirm('This includes deletions, which can\'t be undone. Apply anyway?')) return;
+    setApplying(true);
+    try {
+      const res = await aiAPI.apply(ops);
+      const { applied, rejected } = res.data;
+      notify.success(`Applied ${applied.length} change${applied.length === 1 ? '' : 's'}. They're live on your site.`);
+      rejected.forEach((r) => notify.error(`Skipped: ${r}`));
+      setHistory((h) => [...h, { instruction: plan.instruction, summary: plan.summary, applied: applied.length }]);
+      setPlan(null);
+      setInstruction('');
+      onApplied(applied.find((a) => a.collection === 'portfolio')?.record);
+    } catch (err) {
+      notify.error(`Apply failed: ${errorText(err)}`);
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  const discard = () => {
+    if (plan) setHistory((h) => [...h, { instruction: plan.instruction, summary: `${plan.summary} (discarded)` }]);
+    setPlan(null);
+  };
+
+  const count = selected.filter(Boolean).length;
+
+  if (status && !status.enabled) {
+    return (
+      <div>
+        <PageHeader title="AI assistant" subtitle="Update your portfolio by describing the change in plain English." />
+        <section className="panel p-6 space-y-3 text-sm">
+          <p className="flex items-center gap-2 font-semibold text-foreground"><AlertCircle className="w-4 h-4 text-amber-500" /> Gemini isn't configured yet</p>
+          <p className="text-muted-foreground">Create a free API key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-neon-violet hover:underline">Google AI Studio</a>, then set it on the server:</p>
+          <pre className="rounded-xl bg-surface-2 border border-border p-3.5 font-mono text-xs overflow-x-auto">{'# local: add to .env in the project root\nGEMINI_API_KEY=your_key_here\n\n# Vercel\nvercel env add GEMINI_API_KEY'}</pre>
+          <p className="text-muted-foreground">Restart the API server (or redeploy) and reload this page.</p>
+        </section>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <PageHeader
+        title="AI assistant"
+        subtitle="Describe a change in plain English. Gemini drafts the edits and nothing is saved until you approve them."
+        action={status?.model && <span className="chip font-mono text-[11px] inline-flex items-center gap-1.5"><Sparkles className="w-3 h-3 text-neon-violet" /> {status.model}</span>}
+      />
+
+      <form onSubmit={ask} className="panel p-5">
+        <label htmlFor="ai-instruction" className="sr-only">What should change?</label>
+        <textarea
+          id="ai-instruction"
+          rows={3}
+          value={instruction}
+          onChange={(e) => setInstruction(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) ask(); }}
+          placeholder="e.g. Add a new project called…, update my CGPA to 8.9, remove the old Twitter link…"
+          className="field resize-y"
+          disabled={thinking || applying}
+        />
+        <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-1.5">
+            {!instruction && AI_EXAMPLES.map((ex) => (
+              <button key={ex} type="button" onClick={() => setInstruction(ex)} className="chip text-[11px] hover:border-violet-500/50 hover:text-foreground transition-colors text-left">{ex}</button>
+            ))}
+          </div>
+          <button type="submit" disabled={!instruction.trim() || thinking || applying} className="btn btn-primary py-2.5 shrink-0 disabled:opacity-50">
+            {thinking ? <Spinner /> : <Sparkles className="w-4 h-4" />} {thinking ? 'Thinking…' : 'Draft changes'}
+          </button>
+        </div>
+      </form>
+
+      {thinking && <div className="mt-5 space-y-3">{[0, 1].map((i) => <div key={i} className="panel h-28 animate-pulse" />)}</div>}
+
+      {plan && (
+        <section className="mt-6" aria-live="polite">
+          <div className="panel p-5 border-violet-500/30">
+            <p className="hud-label mb-1">Proposed</p>
+            <p className="text-foreground">{plan.summary || 'Here is what I would change.'}</p>
+            {plan.rejected.length > 0 && (
+              <ul className="mt-3 space-y-1 text-xs text-amber-600 dark:text-amber-400">
+                {plan.rejected.map((r) => <li key={r} className="flex gap-1.5"><AlertCircle className="w-3.5 h-3.5 shrink-0 mt-px" /> Ignored: {r}</li>)}
+              </ul>
+            )}
+          </div>
+
+          {plan.operations.length === 0 ? (
+            <EmptyState text="No changes to make. Try rephrasing your request with more detail." />
+          ) : (
+            <>
+              <div className="mt-3 space-y-3">
+                {plan.operations.map((op, i) => (
+                  <OperationCard key={i} op={op} checked={selected[i]} onToggle={() => setSelected((s) => s.map((v, j) => (j === i ? !v : v)))} />
+                ))}
+              </div>
+              <div className="sticky bottom-0 z-10 -mx-4 sm:mx-0 mt-5 px-4 sm:px-5 py-3.5 sm:rounded-2xl glass flex items-center justify-between gap-3">
+                <span className="text-sm text-muted-foreground">{count} of {plan.operations.length} change{plan.operations.length === 1 ? '' : 's'} selected</span>
+                <div className="flex gap-2">
+                  <button type="button" onClick={discard} disabled={applying} className="btn btn-outline py-2.5">Discard</button>
+                  <button type="button" onClick={apply} disabled={applying || count === 0} className="btn btn-primary py-2.5 disabled:opacity-50">
+                    {applying ? <Spinner /> : <Check className="w-4 h-4" />} {applying ? 'Applying…' : `Apply ${count}`}
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </section>
+      )}
+
+      {history.length > 0 && (
+        <section className="mt-8">
+          <h2 className="font-display text-lg font-semibold text-foreground mb-3">This session</h2>
+          <ul className="space-y-2">
+            {[...history].reverse().map((h, i) => (
+              <li key={i} className="panel p-4 text-sm">
+                <p className="font-medium text-foreground">{h.instruction}</p>
+                <p className="mt-1 text-muted-foreground">
+                  {h.applied !== undefined && <span className="text-emerald-600 dark:text-emerald-400">✓ {h.applied} applied · </span>}
+                  {h.summary}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* Shell                                                               */
 /* ------------------------------------------------------------------ */
 
-type View = 'overview' | 'profile' | 'about' | 'projects' | 'experience' | 'achievements' | 'certifications' | 'skills' | 'messages';
+type View = 'overview' | 'assistant' | 'profile' | 'about' | 'projects' | 'experience' | 'achievements' | 'certifications' | 'skills' | 'messages';
 
 const NAV: { id: View; label: string; icon: typeof User; group: string }[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard, group: 'General' },
   { id: 'messages', label: 'Messages', icon: Inbox, group: 'General' },
+  { id: 'assistant', label: 'AI assistant', icon: Sparkles, group: 'General' },
   { id: 'profile', label: 'Profile', icon: User, group: 'Content' },
   { id: 'about', label: 'About & stats', icon: FileText, group: 'Content' },
   { id: 'projects', label: 'Projects', icon: FolderGit2, group: 'Content' },
@@ -1253,6 +1503,7 @@ export default function AdminDashboard() {
         <main className="px-4 sm:px-8 py-8 max-w-6xl">
           <motion.div key={view} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
             {view === 'overview' && <OverviewView portfolio={portfolio} stats={stats} counts={counts} messages={messages} go={go} />}
+            {view === 'assistant' && <AssistantView onApplied={(p) => { if (p) setPortfolio(p); loadSummary(); }} />}
             {view === 'messages' && <MessagesView messages={messages} loading={messagesLoading} setMessages={setMessages} />}
             {view === 'profile' && (portfolio ? <ProfileView portfolio={portfolio} onSaved={setPortfolio} /> : <div className="panel h-64 animate-pulse" />)}
             {view === 'about' && (portfolio ? <AboutView portfolio={portfolio} onSaved={setPortfolio} /> : <div className="panel h-64 animate-pulse" />)}
