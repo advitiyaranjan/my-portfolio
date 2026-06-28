@@ -1193,6 +1193,7 @@ function AssistantView({ onApplied }: { onApplied: (portfolio?: any) => void }) 
     try {
       const res = await aiAPI.plan(text, history.map(({ instruction: i, summary }) => ({ instruction: i, summary })));
       setPlan({ ...res.data, instruction: text });
+      if (res.data.model) setStatus((cur) => (cur ? { ...cur, model: res.data.model } : cur));
       setSelected(res.data.operations.map(() => true));
     } catch (err) {
       notify.error(errorText(err));
@@ -1280,7 +1281,7 @@ function AssistantView({ onApplied }: { onApplied: (portfolio?: any) => void }) 
       {plan && (
         <section className="mt-6" aria-live="polite">
           <div className="panel p-5 border-violet-500/30">
-            <p className="hud-label mb-1">Proposed</p>
+            <p className="hud-label mb-1">Proposed{plan.model && <span className="normal-case tracking-normal text-muted-foreground"> · via {plan.model}</span>}</p>
             <p className="text-foreground">{plan.summary || 'Here is what I would change.'}</p>
             {plan.rejected.length > 0 && (
               <ul className="mt-3 space-y-1 text-xs text-amber-600 dark:text-amber-400">

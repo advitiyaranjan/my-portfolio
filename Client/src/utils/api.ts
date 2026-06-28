@@ -445,6 +445,7 @@ export interface AiPlan {
   summary: string;
   operations: AiOperation[];
   rejected: string[];
+  model: string;
 }
 
 export const aiAPI = {
