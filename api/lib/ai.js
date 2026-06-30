@@ -87,7 +87,9 @@ function buildPrompt(content, instruction, history) {
       name === 'portfolio' ? strip(records[0] || {}) : records.map(strip),
     ]),
   );
-  const schema = Object.entries(COLLECTIONS).map(([name, c]) => `- ${name}: ${c.fields}`).join('\n');
+  const schema = Object.entries(COLLECTIONS)
+    .map(([name, c]) => `- ${name}: ${c.fields}${c.required.length ? `\n  REQUIRED when creating: ${c.required.join(', ')}` : ''}`)
+    .join('\n');
   const previous = (history || [])
     .slice(-6)
     .map((h) => `Admin: ${h.instruction}\nAssistant: ${h.summary}`)
@@ -105,8 +107,9 @@ RULES
 - Reference existing records by their exact "_id" from the content below. Never invent ids.
 - "portfolio" is a single record: always use action "update" with no id. For education/socialLinks/stats you may send just the changed keys. heroHighlights and aboutHighlights are replaced as a whole array, so send the full array.
 - When editing an array field on a collection record (e.g. techStack, highlights, details, modules, skills), send the complete new array.
-- For new records pick a sensible "order" (usually after the last one) and a gradient if the collection has one.
-- Keep the tone professional, concise and in the same style as the existing content. Do not fabricate facts, numbers, links or dates the admin did not give you; leave such fields out instead.
+- "create" must ALWAYS include every REQUIRED field. If the admin gives no description, write a concise one-sentence description from what they did give (name, tech, links, purpose) in the same style as existing records. Use the collection names exactly as listed (e.g. "projects", not "project").
+- For new records pick a sensible "order" (usually after the last one) and a gradient if the collection has one. Do not send "id" for "create".
+- Keep the tone professional, concise and in the same style as the existing content. Do not fabricate numbers, metrics, links or dates the admin did not give you; leave those fields out instead.
 - If the request is unclear or cannot be done with these collections, return no operations and explain why in "summary".
 
 CURRENT CONTENT (JSON)
@@ -217,6 +220,37 @@ function normalizeData(collection, data) {
   return out;
 }
 
+const COLLECTION_ALIASES = {
+  project: 'projects', experiences: 'experience', job: 'experience', jobs: 'experience', work: 'experience',
+  achievement: 'achievements', leadership: 'achievements', certification: 'certifications', certificate: 'certifications',
+  certificates: 'certifications', skill: 'skills', profile: 'portfolio', about: 'portfolio',
+};
+const ACTION_ALIASES = { add: 'create', new: 'create', insert: 'create', edit: 'update', modify: 'update', change: 'update', remove: 'delete' };
+const OP_KEYS = ['action', 'collection', 'id', '_id', 'data', 'fields', 'record', 'values', 'reason'];
+
+// Models don't always follow the exact shape; map common variants onto the canonical one.
+function canonicalOp(raw) {
+  const action = String(raw?.action || '').trim().toLowerCase();
+  const collection = String(raw?.collection || '').trim().toLowerCase();
+  const loose = Object.fromEntries(Object.entries(raw || {}).filter(([k]) => !OP_KEYS.includes(k)));
+  const data = [raw?.data, raw?.fields, raw?.record, raw?.values].find((d) => d && typeof d === 'object' && !Array.isArray(d))
+    || (Object.keys(loose).length ? loose : undefined);
+  const canonical = COLLECTION_ALIASES[collection] || collection;
+  const out = { ...(data || {}) };
+  // "name" is a natural synonym for "title" everywhere except skills and the profile.
+  if (!['skills', 'portfolio'].includes(canonical) && out.title === undefined && typeof out.name === 'string') {
+    out.title = out.name;
+    delete out.name;
+  }
+  return {
+    action: ACTION_ALIASES[action] || action,
+    collection: canonical,
+    id: raw?.id || raw?._id || data?._id,
+    data: out,
+    reason: typeof raw?.reason === 'string' ? raw.reason : '',
+  };
+}
+
 /**
  * Validate raw operations against current content. Returns the clean operations
  * (with the record they affect, for previews) and human-readable reasons for any dropped ones.
@@ -225,8 +259,8 @@ function validateOperations(rawOps, content) {
   const operations = [];
   const rejected = [];
 
-  for (const raw of Array.isArray(rawOps) ? rawOps : []) {
-    const { action, collection, id, reason } = raw || {};
+  for (const raw of (Array.isArray(rawOps) ? rawOps : []).map(canonicalOp)) {
+    const { action, collection, id, reason } = raw;
     const config = COLLECTIONS[collection];
     const label = `${action || '?'} ${collection || '?'}`;
 
@@ -245,7 +279,11 @@ function validateOperations(rawOps, content) {
     if (action === 'create') {
       const data = normalizeData(collection, raw.data);
       const missing = config.required.filter((f) => data[f] === undefined || data[f] === '' || (Array.isArray(data[f]) && data[f].length === 0));
-      if (missing.length) { rejected.push(`${label}: missing ${missing.join(', ')}`); continue; }
+      if (missing.length) {
+        const name = data.title || data.category ? ` "${data.title || data.category}"` : '';
+        rejected.push(`${label}${name}: missing ${missing.join(', ')}. Include it in your request and try again`);
+        continue;
+      }
       operations.push({ action, collection, data, reason: reason || '' });
       continue;
     }
@@ -271,7 +309,8 @@ export async function planChanges(instruction, history) {
 
   const content = await loadContent();
   const { result, model } = await callGemini(buildPrompt(content, instruction, history));
-  const { operations, rejected } = validateOperations(result?.operations, content);
+  const rawOps = Array.isArray(result) ? result : result?.operations ?? result?.changes ?? result?.edits;
+  const { operations, rejected } = validateOperations(rawOps, content);
   return { summary: String(result?.summary || ''), operations, rejected, model };
 }
 
