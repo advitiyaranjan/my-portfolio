@@ -40,3 +40,6 @@ logs/
 .cache/
 *.tmp
 .turbo
+
+# Personal documents (certificates, scorecards)
+Certificates.zip

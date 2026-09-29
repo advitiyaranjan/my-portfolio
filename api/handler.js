@@ -1,5 +1,5 @@
 import 'dotenv/config.js';
-import { usersStorage, skillsStorage, projectsStorage, experiencesStorage, achievementsStorage, contactStorage, portFolioStorage, caseStudiesStorage } from './lib/storage.js';
+import { usersStorage, skillsStorage, projectsStorage, experiencesStorage, achievementsStorage, contactStorage, portFolioStorage, caseStudiesStorage, certificationsStorage } from './lib/storage.js';
 import { extractToken, verifyToken, hashPassword, comparePassword, generateToken, validateEmail } from './lib/auth.js';
 import seedData from './seed.js';
 
@@ -582,6 +582,59 @@ export async function handleCaseStudies(req, res, pathname) {
   return res.status(405).json({ success: false, message: 'Method not allowed' });
 }
 
+// Certifications API
+export async function handleCertifications(req, res, pathname) {
+  setCorsHeaders(res);
+  const id = getIdFromUrl(pathname, '/api/certifications');
+
+  if (id && req.method === 'GET') {
+    const certification = await certificationsStorage.findById(id);
+    if (!certification) return res.status(404).json({ success: false, message: 'Certification not found' });
+    return res.status(200).json({ success: true, data: certification });
+  }
+
+  if (id && req.method === 'PUT') {
+    const user = requireAuth(req);
+    if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
+    const updated = await certificationsStorage.updateById(id, req.body);
+    if (!updated) return res.status(404).json({ success: false, message: 'Certification not found' });
+    return res.status(200).json({ success: true, message: 'Certification updated', data: updated });
+  }
+
+  if (id && req.method === 'DELETE') {
+    const user = requireAuth(req);
+    if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
+    const deleted = await certificationsStorage.deleteById(id);
+    if (!deleted) return res.status(404).json({ success: false, message: 'Certification not found' });
+    return res.status(200).json({ success: true, message: 'Certification deleted' });
+  }
+
+  if (req.method === 'GET') {
+    const certifications = await certificationsStorage.findAll();
+    const sorted = certificationsStorage.sort(certifications, 'order', 1);
+    return res.status(200).json({ success: true, data: sorted, count: sorted.length });
+  }
+
+  if (req.method === 'POST') {
+    const user = requireAuth(req);
+    if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+    const { title, issuer, platform, issueDate, credentialId, verifyUrl, description, modules, order } = req.body;
+    if (!title || !issuer) {
+      return res.status(400).json({ success: false, message: 'Title and issuer required' });
+    }
+
+    const certification = await certificationsStorage.create({
+      title, issuer, platform, issueDate, credentialId, verifyUrl, description,
+      modules: Array.isArray(modules) ? modules : [],
+      order: order || 0,
+    });
+    return res.status(201).json({ success: true, message: 'Certification created', data: certification });
+  }
+
+  return res.status(405).json({ success: false, message: 'Method not allowed' });
+}
+
 export default async function handler(req, res) {
   await bootstrapDataPromise;
 
@@ -603,6 +656,7 @@ export default async function handler(req, res) {
   if (pathname.startsWith('/api/auth')) return handleAuth(req, res, pathname);
   if (pathname.startsWith('/api/contact')) return handleContact(req, res, pathname);
   if (pathname.startsWith('/api/case-studies')) return handleCaseStudies(req, res, pathname);
+  if (pathname.startsWith('/api/certifications')) return handleCertifications(req, res, pathname);
 
   return res.status(404).json({ success: false, message: 'Endpoint not found' });
 }

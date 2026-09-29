@@ -14,7 +14,6 @@ export const API_BASE_URL =
     ? '/api'  // Use Vite proxy in development
     : (import.meta.env.VITE_API_URL?.trim() || '/api'); // Use env var or fallback to /api
 
-console.log('API Base URL:', API_BASE_URL, 'Mode:', import.meta.env.MODE);
 if (import.meta.env.MODE === 'production' && !import.meta.env.VITE_API_URL?.trim()) {
   console.warn('⚠️ WARNING: VITE_API_URL not set! Using relative path /api. Set VITE_API_URL in Vercel environment variables if backend is on different domain.');
 }
@@ -49,12 +48,9 @@ const apiRequest = async (
   }
 
   const fullUrl = `${API_BASE_URL}${endpoint}`;
-  console.log(`API Request: ${method} ${fullUrl}`, { body: config.body });
 
   try {
     const response = await fetch(fullUrl, config);
-
-    console.log(`API Response: ${response.status} ${response.statusText}`);
 
     // Handle 304 Not Modified - return empty data
     if (response.status === 304) {
@@ -313,6 +309,24 @@ export const achievementAPI = {
 };
 
 // ============================================
+// CERTIFICATIONS API
+// ============================================
+
+export const certificationAPI = {
+  getAllCertifications: () =>
+    apiRequest('/certifications', 'GET'),
+
+  createCertification: (certificationData: {[key: string]: unknown}) =>
+    apiRequest('/certifications', 'POST', certificationData),
+
+  updateCertification: (id: string, certificationData: {[key: string]: unknown}) =>
+    apiRequest(`/certifications/${id}`, 'PUT', certificationData),
+
+  deleteCertification: (id: string) =>
+    apiRequest(`/certifications/${id}`, 'DELETE'),
+};
+
+// ============================================
 // MESSAGES API
 // ============================================
 
@@ -422,6 +436,7 @@ export default {
   skillAPI,
   experienceAPI,
   caseStudyAPI,
+  certificationAPI,
   messagesAPI,
   resumeAPI,
   portfolioAPI,

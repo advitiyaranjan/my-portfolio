@@ -1,245 +1,202 @@
 import { useState, useEffect } from 'react';
-import { Moon, Sun, Menu, X, Settings } from 'lucide-react';
+import { Moon, Sun, Menu, X, LayoutDashboard } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useTheme } from '../theme';
 
-interface NavbarProps {
-  theme: string;
-  toggleTheme: () => void;
+// Defined outside the component so the section observer below is set up once, not on every render.
+const NAV_ITEMS = [
+  { label: 'Home', id: 'home' },
+  { label: 'About', id: 'about' },
+  { label: 'Skills', id: 'skills' },
+  { label: 'Projects', id: 'projects' },
+  { label: 'Experience', id: 'experience' },
+  { label: 'Achievements', id: 'achievements' },
+  { label: 'Certifications', id: 'certifications' },
+  { label: 'Contact', id: 'contact' },
+];
+
+const hasAdminToken = () => {
+  try {
+    return Boolean(localStorage.getItem('authToken') || localStorage.getItem('portfolioToken'));
+  } catch {
+    return false;
+  }
+};
+
+export function ThemeToggle({ className = '' }: { className?: string }) {
+  const { theme, toggleTheme } = useTheme();
+  const isDark = theme === 'dark';
+  return (
+    <button
+      type="button"
+      onClick={(e) => toggleTheme(e)}
+      className={`icon-btn ${className}`}
+      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      title={isDark ? 'Light mode' : 'Dark mode'}
+    >
+      {isDark ? <Sun className="w-[18px] h-[18px]" /> : <Moon className="w-[18px] h-[18px]" />}
+    </button>
+  );
 }
 
-export function Navbar({ theme, toggleTheme }: NavbarProps) {
+export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(hasAdminToken);
   const [activeSection, setActiveSection] = useState('home');
 
-  const navItems = [
-    { label: 'Home', href: '#home' },
-    { label: 'About', href: '#about' },
-    { label: 'Skills', href: '#skills' },
-    { label: 'Projects', href: '#projects' },
-    { label: 'Experience', href: '#experience' },
-    { label: 'Leadership & Achievements', href: '#achievements' },
-    { label: 'Contact', href: '#contact' },
-  ];
-
   useEffect(() => {
-    // Check if user has auth token
-    const token = localStorage.getItem('authToken') || localStorage.getItem('portfolioToken');
-    setIsAdmin(!!token);
-    
-    // Listen for storage changes (logout from another tab)
-    const handleStorageChange = () => {
-      const newToken = localStorage.getItem('authToken') || localStorage.getItem('portfolioToken');
-      setIsAdmin(!!newToken);
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    const onStorage = () => setIsAdmin(hasAdminToken());
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
   }, []);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    const onScroll = () => setIsScrolled(window.scrollY > 16);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Track active section using Intersection Observer
   useEffect(() => {
-    const observerOptions = {
-      root: null,
-      rootMargin: '-50% 0px -50% 0px',
-      threshold: 0,
-    };
-
-    const observerCallback = (entries: IntersectionObserverEntry[]) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          const id = entry.target.id;
-          setActiveSection(id || 'home');
-          console.log('Active section:', id);
-        }
-      });
-    };
-
-    const observer = new IntersectionObserver(observerCallback, observerOptions);
-
-    // Observe all sections
-    navItems.forEach((item) => {
-      const element = document.querySelector(item.href);
-      if (element) {
-        observer.observe(element);
-      }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) setActiveSection(entry.target.id || 'home');
+        });
+      },
+      { rootMargin: '-45% 0px -50% 0px', threshold: 0 }
+    );
+    NAV_ITEMS.forEach(({ id }) => {
+      const element = document.getElementById(id);
+      if (element) observer.observe(element);
     });
+    return () => observer.disconnect();
+  }, []);
 
-    return () => {
-      observer.disconnect();
-    };
-  }, [navItems]);
-
-  const scrollToSection = (href: string) => {
-    const element = document.querySelector(href);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-      setIsMobileMenuOpen(false);
-    }
+  const scrollToSection = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    setIsMobileMenuOpen(false);
   };
 
   return (
-    <motion.nav
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled
-          ? 'bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg shadow-lg'
-          : 'bg-transparent'
-      }`}
+    <motion.header
+      initial={{ y: -80, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.5, ease: 'easeOut' }}
+      className="fixed top-0 inset-x-0 z-50 px-3 sm:px-4 pt-3"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <motion.a
+      <nav
+        className={`mx-auto max-w-6xl rounded-2xl transition-[background-color,box-shadow,border-color] duration-300 ${
+          isScrolled || isMobileMenuOpen ? 'glass shadow-[0_10px_30px_-18px_rgba(0,0,0,0.35)]' : 'border border-transparent'
+        }`}
+        aria-label="Primary"
+      >
+        <div className="flex items-center justify-between h-14 pl-3 pr-2 sm:pl-4">
+          <a
             href="#home"
             onClick={(e) => {
               e.preventDefault();
-              scrollToSection('#home');
+              scrollToSection('home');
             }}
-            className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
-            whileHover={{ scale: 1.05 }}
+            className="group flex items-center gap-2.5"
           >
-            Portfolio
-          </motion.a>
+            <span className="grid place-items-center w-9 h-9 rounded-xl neon-border font-display font-bold text-sm">
+              <span className="text-gradient">AR</span>
+            </span>
+            <span className="hidden sm:flex flex-col leading-none">
+              <span className="font-display font-semibold text-foreground">Advitiya Ranjan</span>
+              <span className="font-mono text-[10px] tracking-[0.18em] uppercase text-muted-foreground mt-1">portfolio.v2</span>
+            </span>
+          </a>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            {navItems.map((item) => {
-              const sectionId = item.href.replace('#', '');
-              const isActive = activeSection === sectionId;
-              
+          {/* Desktop navigation */}
+          <ul className="hidden lg:flex items-center gap-0.5">
+            {NAV_ITEMS.map(({ label, id }) => {
+              const isActive = activeSection === id;
               return (
-                <motion.div key={item.label} className="relative">
-                  <motion.a
-                    href={item.href}
+                <li key={id} className="relative">
+                  <a
+                    href={`#${id}`}
                     onClick={(e) => {
                       e.preventDefault();
-                      scrollToSection(item.href);
+                      scrollToSection(id);
                     }}
-                    className={`text-sm font-medium transition-colors ${
-                      isActive
-                        ? 'text-blue-600 dark:text-blue-400'
-                        : 'text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400'
+                    aria-current={isActive ? 'true' : undefined}
+                    className={`relative z-10 block px-3 py-2 text-[13px] font-medium rounded-lg transition-colors ${
+                      isActive ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
                     }`}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
                   >
-                    {item.label}
-                  </motion.a>
-                  
-                  {/* Active Indicator */}
+                    {label}
+                  </a>
                   {isActive && (
-                    <motion.div
-                      layoutId="activeIndicator"
-                      className="absolute left-0 -bottom-2 w-full h-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full"
-                      initial={{ width: 0 }}
-                      animate={{ width: '100%' }}
-                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                    />
+                    <motion.span
+                      layoutId="nav-active"
+                      className="absolute inset-0 rounded-lg bg-surface-2 border border-border"
+                      transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                    >
+                      <span className="absolute left-1/2 -translate-x-1/2 -bottom-px h-px w-6 bg-gradient-to-r from-neon-cyan to-neon-violet" />
+                    </motion.span>
                   )}
-                </motion.div>
+                </li>
               );
             })}
+          </ul>
 
-            {/* Admin Button */}
+          <div className="flex items-center gap-2">
             {isAdmin && (
-              <motion.a
-                href="/admin/dashboard"
-                className="p-2 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                title="Admin Dashboard"
-              >
-                <Settings className="w-5 h-5" />
-              </motion.a>
+              <a href="/admin/dashboard" className="icon-btn" title="Admin dashboard" aria-label="Admin dashboard">
+                <LayoutDashboard className="w-[18px] h-[18px]" />
+              </a>
             )}
-
-            {/* Theme Toggle */}
-            <motion.button
-              onClick={toggleTheme}
-              className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-              whileHover={{ scale: 1.1, rotate: 180 }}
-              whileTap={{ scale: 0.9 }}
-            >
-              {theme === 'dark' ? (
-                <Sun className="w-5 h-5 text-yellow-500" />
-              ) : (
-                <Moon className="w-5 h-5 text-gray-700" />
-              )}
-            </motion.button>
-          </div>
-
-          {/* Mobile Menu Button */}
-          <div className="flex md:hidden items-center space-x-4">
-            <motion.button
-              onClick={toggleTheme}
-              className="p-2 rounded-full bg-gray-200 dark:bg-gray-700"
-              whileTap={{ scale: 0.9 }}
-            >
-              {theme === 'dark' ? (
-                <Sun className="w-5 h-5 text-yellow-500" />
-              ) : (
-                <Moon className="w-5 h-5 text-gray-700" />
-              )}
-            </motion.button>
-
+            <ThemeToggle />
             <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2 text-gray-700 dark:text-gray-300"
+              type="button"
+              onClick={() => setIsMobileMenuOpen((open) => !open)}
+              className="icon-btn lg:hidden"
+              aria-expanded={isMobileMenuOpen}
+              aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
             >
-              {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
-      </div>
 
-      {/* Mobile Menu */}
-      <AnimatePresence>
-        {isMobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800"
-          >
-            <div className="px-4 py-4 space-y-3">
-              {navItems.map((item) => {
-                const sectionId = item.href.replace('#', '');
-                const isActive = activeSection === sectionId;
-                
-                return (
-                  <motion.a
-                    key={item.label}
-                    href={item.href}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      scrollToSection(item.href);
-                    }}
-                    className={`block px-4 py-2 rounded-lg transition-colors font-medium ${
-                      isActive
-                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                    }`}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    {item.label}
-                  </motion.a>
-                );
-              })}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.nav>
+        {/* Mobile navigation */}
+        <AnimatePresence initial={false}>
+          {isMobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.25 }}
+              className="lg:hidden overflow-hidden px-2 pb-2"
+            >
+              <ul className="grid grid-cols-2 gap-1 pt-1 border-t border-border">
+                {NAV_ITEMS.map(({ label, id }) => {
+                  const isActive = activeSection === id;
+                  return (
+                    <li key={id}>
+                      <a
+                        href={`#${id}`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          scrollToSection(id);
+                        }}
+                        className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                          isActive ? 'bg-surface-2 text-foreground' : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        {label}
+                      </a>
+                    </li>
+                  );
+                })}
+              </ul>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </nav>
+    </motion.header>
   );
 }

@@ -1,9 +1,7 @@
-import { motion } from 'motion/react';
-import { useInView } from './hooks/useInView';
-import { Code2, Lightbulb, Users, Target } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { portfolioAPI } from '@/utils/api';
-import { AnimatedBackground } from './AnimatedBackground';
+import { Code2, Lightbulb, Users, Target, GraduationCap } from 'lucide-react';
+import { usePortfolio } from './hooks/usePortfolio';
+import { SectionHeading } from './SectionHeading';
+import { Reveal } from './Reveal';
 
 const highlightIcons = {
   Code: Code2,
@@ -12,162 +10,123 @@ const highlightIcons = {
   Target,
 } as const;
 
-const defaultHighlights = [
+const DEFAULT_HIGHLIGHTS = [
   {
     icon: 'Code',
-    title: 'Full Stack Developer',
-    description: 'Expert in React, Node.js, Next.js, and MongoDB for building scalable applications',
+    title: 'Full Stack Engineering',
+    description: 'React, Next.js, Node.js, Express and TypeScript, from REST APIs and MongoDB schemas to deployed, responsive interfaces.',
   },
   {
     icon: 'Lightbulb',
-    title: 'Blockchain & Web3',
-    description: 'Proficient in Solidity smart contracts, Web3.js, and decentralized solutions',
+    title: 'AI & Machine Learning',
+    description: 'PyTorch, TensorFlow and scikit-learn for deep learning, computer vision and practical ML features.',
   },
   {
     icon: 'Users',
-    title: 'AI & Machine Learning',
-    description: 'Applied experience with TensorFlow, scikit-learn, and OpenAI APIs',
+    title: 'Community & Leadership',
+    description: 'Google Student Ambassador, Chairman of the IIITM Hindi Club and Social Media Head at Rotaract.',
   },
   {
     icon: 'Target',
-    title: 'Innovative Problem Solver',
-    description: 'Building cutting-edge solutions for governance, finance, and verification systems',
+    title: 'Problem Solver',
+    description: 'GATE 2026 AIR 3460 and 500+ DSA problems solved across LeetCode, Codeforces and GeeksforGeeks.',
   },
 ];
 
 export function About() {
-  const [ref, isInView] = useInView({ threshold: 0.1 });
-  const [portfolio, setPortfolio] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { portfolio, loading } = usePortfolio();
 
-  useEffect(() => {
-    loadPortfolio();
-  }, []);
-
-  const loadPortfolio = async () => {
-    try {
-      const data = await portfolioAPI.getPortfolio();
-      setPortfolio(data.data);
-    } catch (error) {
-      console.error('Failed to load portfolio:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const highlights = Array.isArray(portfolio?.aboutHighlights) && portfolio.aboutHighlights.length > 0
-    ? portfolio.aboutHighlights
-    : defaultHighlights;
+  const highlights = portfolio.aboutHighlights?.length ? portfolio.aboutHighlights : DEFAULT_HIGHLIGHTS;
+  const paragraphs = (portfolio.aboutDescription || portfolio.bio).split(/\n\s*\n/).filter(Boolean);
+  const stats = portfolio.stats || {};
+  const statItems = [
+    { value: `${stats.projectsCompleted ?? 7}+`, label: 'Projects shipped' },
+    { value: `${stats.yearsExperience ?? 1}+`, label: 'Years building' },
+    { value: `${stats.usersImpacted ?? 1}K+`, label: 'People reached' },
+    { value: `${stats.technologiesCount ?? 30}+`, label: 'Technologies' },
+  ];
+  const education = portfolio.education;
 
   return (
-    <section id="about" className="py-20 bg-gray-950 relative overflow-hidden" ref={ref}>
-      <AnimatedBackground />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
-        >
-          <h2 className="text-4xl sm:text-5xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            About Me
-          </h2>
-          <div className="w-20 h-1 bg-gradient-to-r from-blue-600 to-purple-600 mx-auto rounded-full" />
-        </motion.div>
+    <section id="about" className="relative py-24 sm:py-28">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+        <SectionHeading index="01" eyebrow="About" title="Engineering meets" highlight="product thinking" />
 
-        <div className="grid md:grid-cols-2 gap-12 items-center mb-16">
-          {/* Text Content */}
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={isInView ? { opacity: 1, x: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
-            <h3 className="text-3xl font-bold mb-6 text-gray-800 dark:text-white">
-              Full Stack Developer & Blockchain Enthusiast
-            </h3>
-            <div className="space-y-4 text-gray-600 dark:text-gray-300">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          <Reveal className="lg:col-span-3">
+            <div className="panel h-full p-7 sm:p-9">
+              <p className="hud-label mb-5">// profile.md</p>
               {loading ? (
-                <div className="animate-pulse space-y-4">
-                  <div className="h-4 bg-gray-300 rounded"></div>
-                  <div className="h-4 bg-gray-300 rounded"></div>
-                  <div className="h-4 bg-gray-300 rounded"></div>
+                <div className="space-y-3 animate-pulse">
+                  {[0, 1, 2, 3].map((i) => (
+                    <div key={i} className="h-4 rounded bg-surface-3" style={{ width: `${95 - i * 12}%` }} />
+                  ))}
                 </div>
               ) : (
-                <>
-                  <p>{portfolio?.bio || 'Full Stack Developer with expertise in modern web technologies.'}</p>
-                  <div className="whitespace-pre-line">
-                    {portfolio?.aboutDescription || 'I\'ve successfully worked on diverse projects from governance technologies with the Government of India\'s Viksit Bharat initiative to blockchain-based voting systems and AI-powered finance trackers. My focus is on creating scalable, secure, and user-centric solutions that combine cutting-edge technology with practical utility.\n\nWith GATE 2026 qualification (AIR 3460) and active involvement in leadership initiatives like SOUL Bihar & Jharkhand, I\'m committed to continuous learning and making a meaningful impact through technology and innovation.'}
-                  </div>
-                </>
+                <div className="space-y-5 text-[1.02rem] leading-relaxed text-muted-foreground">
+                  {paragraphs.map((paragraph, i) => (
+                    <p key={i} className={i === 0 ? 'text-foreground' : undefined}>
+                      {paragraph}
+                    </p>
+                  ))}
+                </div>
               )}
             </div>
-          </motion.div>
+          </Reveal>
 
-          {/* Glass Card with Stats */}
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={isInView ? { opacity: 1, x: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="relative"
-          >
-            <div className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-lg rounded-2xl p-8 shadow-xl border border-gray-200 dark:border-gray-700">
-              <div className="grid grid-cols-2 gap-6">
-                {[
-                  { number: `${portfolio?.stats?.projectsCompleted || 50}+`, label: 'Projects Completed' },
-                  { number: `${portfolio?.stats?.yearsExperience || 5}+`, label: 'Years Experience' },
-                  { number: `${portfolio?.stats?.usersImpacted || 100}K+`, label: 'Users Impacted' },
-                  { number: `${portfolio?.stats?.technologiesCount || 15}+`, label: 'Technologies' },
-                ].map((stat, index) => (
-                  <motion.div
-                    key={stat.label}
-                    initial={{ opacity: 0, scale: 0.5 }}
-                    animate={isInView ? { opacity: 1, scale: 1 } : {}}
-                    transition={{ duration: 0.4, delay: 0.6 + index * 0.1 }}
-                    className="text-center p-4 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl"
-                  >
-                    <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-                      {stat.number}
+          <div className="lg:col-span-2 grid gap-6">
+            {education && (
+              <Reveal delay={0.1}>
+                <div className="panel hud-frame p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="shrink-0 grid place-items-center w-11 h-11 rounded-xl bg-surface-2 border border-border text-neon-cyan">
+                      <GraduationCap className="w-5 h-5" />
                     </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      {stat.label}
+                    <div className="min-w-0">
+                      <p className="hud-label">Education · {education.period}</p>
+                      <h3 className="mt-2 font-display text-lg font-semibold leading-snug text-foreground">
+                        {education.degree}
+                      </h3>
+                      <p className="mt-1 text-sm text-muted-foreground">{education.institution}</p>
+                      {education.cgpa && (
+                        <p className="mt-3 inline-flex items-baseline gap-2 font-mono text-xs text-muted-foreground">
+                          CGPA <span className="font-display text-base font-bold text-foreground">{education.cgpa}</span>
+                        </p>
+                      )}
                     </div>
-                  </motion.div>
+                  </div>
+                </div>
+              </Reveal>
+            )}
+
+            <Reveal delay={0.18}>
+              <div className="grid grid-cols-2 gap-3">
+                {statItems.map((stat) => (
+                  <div key={stat.label} className="panel p-5">
+                    <p className="font-display text-3xl font-bold text-gradient">{stat.value}</p>
+                    <p className="mt-1 font-mono text-[10px] tracking-[0.14em] uppercase text-muted-foreground">{stat.label}</p>
+                  </div>
                 ))}
               </div>
-            </div>
-          </motion.div>
+            </Reveal>
+          </div>
         </div>
 
-        {/* Highlights Grid */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {highlights.map((item, index) => (
-            (() => {
-              const Icon = highlightIcons[item.icon as keyof typeof highlightIcons] || Code2;
-
-              return (
-            <motion.div
-              key={`${item.title}-${index}`}
-              initial={{ opacity: 0, y: 30 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.4, delay: 0.8 + index * 0.1 }}
-              className="group p-6 bg-white dark:bg-gray-900 rounded-xl shadow-lg hover:shadow-xl transition-shadow border border-gray-200 dark:border-gray-700"
-            >
-              <motion.div
-                className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center mb-4"
-                whileHover={{ scale: 1.1, rotate: 5 }}
-              >
-                <Icon className="w-6 h-6 text-white" />
-              </motion.div>
-              <h4 className="text-lg font-semibold mb-2 text-gray-800 dark:text-white">
-                {item.title}
-              </h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {item.description}
-              </p>
-            </motion.div>
-              );
-            })()
-          ))}
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {highlights.map((item, index) => {
+            const Icon = highlightIcons[item.icon as keyof typeof highlightIcons] || Code2;
+            return (
+              <Reveal key={`${item.title}-${index}`} delay={index * 0.06}>
+                <div className="panel panel-interactive h-full p-6">
+                  <div className="grid place-items-center w-11 h-11 rounded-xl neon-border mb-5">
+                    <Icon className="w-5 h-5 text-neon-violet" />
+                  </div>
+                  <h3 className="font-display text-lg font-semibold text-foreground">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.description}</p>
+                </div>
+              </Reveal>
+            );
+          })}
         </div>
       </div>
     </section>

@@ -1,18 +1,43 @@
 <!DOCTYPE html>
-  <html lang="en">
-    <head>
-      <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>Advitiya Ranjan | Portfolio</title>
-      <link rel="icon" href="/favicon.ico" type="image/x-icon">
-      <link rel="alternate icon" href="/favicon.svg" type="image/svg+xml">
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Advitiya Ranjan | Portfolio</title>
+    <meta name="description" content="Advitiya Ranjan: Full Stack Developer & AI/ML Engineer, Google Student Ambassador and GATE 2026 qualifier at IIITM Gwalior." />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f4f6fb" />
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="alternate icon" href="/favicon.svg" type="image/svg+xml">
 
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap"
+    />
 
-<meta name="theme-color" content="#000000">
-    </head>
+    <!-- Apply the saved/system theme before first paint so there is no light/dark flash. -->
+    <script>
+      (function () {
+        var theme = 'light';
+        try {
+          var saved = localStorage.getItem('theme');
+          theme = saved === 'dark' || saved === 'light'
+            ? saved
+            : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        } catch (e) {}
+        var root = document.documentElement;
+        if (theme === 'dark') root.classList.add('dark');
+        root.style.colorScheme = theme;
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', theme === 'dark' ? '#05070f' : '#f4f6fb');
+      })();
+    </script>
+  </head>
 
-    <body>
-      <div id="root"></div>
-      <script type="module" src="/src/main.tsx"></script>
-    </body>
-  </html>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -47,9 +47,9 @@ class JSONStorage {
 
   async read() {
     try {
-      await this.ensureFile();
-
       if (useBlobStorage) {
+        // A single blob lookup per read: a missing blob simply means an empty collection.
+        // (Creating it up front doubled the round-trips on every request, slowing cold starts and login.)
         const result = await get(this.blobPath, { access: blobAccess });
         if (!result || result.statusCode !== 200 || !result.stream) {
           return [];
@@ -59,6 +59,7 @@ class JSONStorage {
         return JSON.parse(data);
       }
 
+      await this.ensureFile();
       const data = fs.readFileSync(this.filepath, 'utf8');
       return JSON.parse(data);
     } catch (error) {
@@ -125,6 +126,18 @@ class JSONStorage {
     return newItem;
   }
 
+  async replaceAll(records) {
+    const now = new Date().toISOString();
+    const items = records.map((record) => ({
+      _id: this.generateId(),
+      ...record,
+      createdAt: now,
+      updatedAt: now,
+    }));
+    const ok = await this.write(items);
+    return ok ? items : null;
+  }
+
   async updateById(id, updateData) {
     const items = await this.read();
     const index = items.findIndex(item => item._id === id);
@@ -174,5 +187,6 @@ export const achievementsStorage = new JSONStorage('achievements');
 export const contactStorage = new JSONStorage('contact');
 export const portFolioStorage = new JSONStorage('portfolio');
 export const caseStudiesStorage = new JSONStorage('case-studies');
+export const certificationsStorage = new JSONStorage('certifications');
 
 export default JSONStorage;

@@ -1,245 +1,183 @@
 import { motion } from 'motion/react';
-import { ArrowRight, Github, Linkedin, Mail, Download } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { ArrowRight, ArrowDown, FileText, Github, Linkedin, Mail, Code2, Twitter } from 'lucide-react';
+import { useEffect } from 'react';
 import { portfolioAPI } from '@/utils/api';
-import { AnimatedBackground } from './AnimatedBackground';
+import { usePortfolio } from './hooks/usePortfolio';
 
 const PORTFOLIO_VIEW_SESSION_KEY = 'portfolioViewTracked';
 
+const fadeUp = (delay: number) => ({
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.55, delay, ease: 'easeOut' as const },
+});
+
 export function Hero() {
-  const [portfolio, setPortfolio] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { portfolio } = usePortfolio();
 
   useEffect(() => {
-    loadPortfolio();
-    trackPortfolioView();
-  }, []);
-
-  const trackPortfolioView = async () => {
-    if (sessionStorage.getItem(PORTFOLIO_VIEW_SESSION_KEY)) {
+    try {
+      if (sessionStorage.getItem(PORTFOLIO_VIEW_SESSION_KEY)) return;
+    } catch {
       return;
     }
+    portfolioAPI
+      .incrementView()
+      .then(() => {
+        try {
+          sessionStorage.setItem(PORTFOLIO_VIEW_SESSION_KEY, 'true');
+        } catch {
+          /* ignore */
+        }
+      })
+      .catch(() => {});
+  }, []);
 
-    try {
-      await portfolioAPI.incrementView();
-      sessionStorage.setItem(PORTFOLIO_VIEW_SESSION_KEY, 'true');
-    } catch (error) {
-      console.error('Failed to track portfolio view:', error);
-    }
-  };
+  const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
 
-  const loadPortfolio = async () => {
-    try {
-      const data = await portfolioAPI.getPortfolio();
-      setPortfolio(data.data);
-    } catch (error) {
-      console.error('Failed to load portfolio:', error);
-      // Use default values if API fails
-      setPortfolio({
-        fullName: 'Advitiya Ranjan',
-        title: 'Full Stack Developer & Blockchain Engineer',
-        bio: 'Building innovative solutions with React, Node.js, and Blockchain...',
-        profileImage: '/images/profile.jpg',
-        resumeLink: '',
-        socialLinks: {
-          github: 'https://github.com/advitiyaranjan',
-          linkedin: 'https://www.linkedin.com/in/advitiya-ranjan',
-          email_link: 'mailto:advityaranjan1@gmail.com',
-        },
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const nameParts = portfolio.fullName.trim().split(' ');
+  const lastName = nameParts.length > 1 ? nameParts.pop() : '';
+  const firstNames = nameParts.join(' ');
 
-  const scrollToSection = (href: string) => {
-    const element = document.querySelector(href);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
+  const { socialLinks } = portfolio;
+  const socials = [
+    { Icon: Github, href: socialLinks.github, label: 'GitHub' },
+    { Icon: Linkedin, href: socialLinks.linkedin, label: 'LinkedIn' },
+    { Icon: Code2, href: socialLinks.leetcode, label: 'LeetCode' },
+    { Icon: Twitter, href: socialLinks.twitter, label: 'X (Twitter)' },
+    { Icon: Mail, href: portfolio.email ? `mailto:${portfolio.email}` : socialLinks.email_link, label: 'Email' },
+  ].filter((social) => social.href);
 
-  if (loading) {
-    return (
-      <section id="home" className="min-h-screen flex items-center justify-center pt-16">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-      </section>
-    );
-  }
-
-  const socialLinks = [
-    { Icon: Github, href: portfolio?.socialLinks?.github || 'https://github.com', label: 'GitHub' },
-    { Icon: Linkedin, href: portfolio?.socialLinks?.linkedin || 'https://linkedin.com', label: 'LinkedIn' },
-    { Icon: Mail, href: portfolio?.socialLinks?.email_link || 'mailto:hello@example.com', label: 'Email' },
-  ];
+  const highlights = portfolio.heroHighlights ?? [];
 
   return (
-    <section id="home" className="min-h-screen flex items-center justify-center relative overflow-hidden pt-16 bg-gray-950">
-      <AnimatedBackground />
-
-      <div className="max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 py-20 w-full relative z-10">
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-12 px-4 sm:px-0">
-          {/* Text Content */}
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8 }}
-            className="flex-1 text-center lg:text-left"
-          >
+    <section id="home" className="relative min-h-[100svh] flex items-center pt-28 pb-20 overflow-hidden">
+      <div className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-14 lg:gap-10 items-center">
+          {/* Copy */}
+          <div className="text-center lg:text-left">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="inline-block px-4 py-2 bg-blue-100 dark:bg-blue-900/30 rounded-full text-blue-600 dark:text-blue-400 mb-6"
+              {...fadeUp(0.05)}
+              className="inline-flex items-center gap-2.5 rounded-full border border-border bg-surface/70 px-3.5 py-1.5 mb-7"
             >
-              👋 Welcome to my portfolio
+              <span className="pulse-dot w-2 h-2 rounded-full bg-emerald-500" />
+              <span className="font-mono text-[11px] tracking-[0.14em] uppercase text-muted-foreground">
+                Open to opportunities
+              </span>
             </motion.div>
+
+            <motion.p {...fadeUp(0.12)} className="font-mono text-sm text-neon-cyan mb-3">
+              &gt; hello_world, I'm
+            </motion.p>
 
             <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="mb-4 leading-tight"
+              {...fadeUp(0.18)}
+              className="font-display text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05] text-foreground"
             >
-              <span className="block text-gray-700 dark:text-gray-300 mb-2">
-                Hi, I'm
-              </span>
-              <span className="block text-5xl sm:text-6xl lg:text-7xl font-black bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent leading-[1.2]">
-                {portfolio?.fullName}
-              </span>
+              {firstNames} {lastName && <span className="text-gradient">{lastName}</span>}
             </motion.h1>
 
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="text-2xl sm:text-3xl text-gray-600 dark:text-gray-400 mb-6"
-            >
-              {portfolio?.title}
+            <motion.p {...fadeUp(0.26)} className="mt-5 font-display text-xl sm:text-2xl font-medium text-foreground/85">
+              {portfolio.title}
+              <span className="inline-block w-[2px] h-[1.1em] ml-1 align-[-0.15em] bg-neon-cyan animate-pulse" aria-hidden="true" />
             </motion.p>
 
             <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="text-lg text-gray-600 dark:text-gray-400 mb-8 max-w-2xl mx-auto lg:mx-0"
+              {...fadeUp(0.34)}
+              className="mt-5 text-base sm:text-lg leading-relaxed text-muted-foreground max-w-xl mx-auto lg:mx-0"
             >
-              {portfolio?.bio}
+              {portfolio.bio}
             </motion.p>
 
-            {/* CTA Buttons */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-              className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-8"
-            >
-              <motion.button
-                onClick={() => scrollToSection('#projects')}
-                className="group px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full font-medium shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center gap-2"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                View Projects
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </motion.button>
-
-              <motion.a
-                href={portfolio?.resumeLink || '#'}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => {
-                  if (!portfolio?.resumeLink) {
-                    e.preventDefault();
-                    scrollToSection('#contact');
-                  }
-                }}
-                className="group px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full font-medium shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center gap-2"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                title={portfolio?.resumeLink ? 'View Resume' : 'Resume link will be added soon'}
-              >
-                View Resume
-                <Download className="w-5 h-5 group-hover:translate-y-1 transition-transform" />
-              </motion.a>
-
-              <motion.button
-                onClick={() => scrollToSection('#contact')}
-                className="px-8 py-4 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full font-medium border-2 border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-500 transition-colors"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Contact Me
-              </motion.button>
+            <motion.div {...fadeUp(0.42)} className="mt-9 flex flex-wrap gap-3 justify-center lg:justify-start">
+              <button type="button" onClick={() => scrollTo('projects')} className="btn btn-primary group">
+                View projects
+                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+              </button>
+              {portfolio.resumeLink && (
+                <a href={portfolio.resumeLink} target="_blank" rel="noopener noreferrer" className="btn btn-outline">
+                  <FileText className="w-4 h-4" />
+                  Resume
+                </a>
+              )}
+              <button type="button" onClick={() => scrollTo('contact')} className="btn btn-ghost">
+                Contact me
+              </button>
             </motion.div>
 
-            {/* Social Links */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.7 }}
-              className="flex gap-4 justify-center lg:justify-start"
-            >
-              {socialLinks.map(({ Icon, href, label }) => (
-                <motion.a
+            <motion.div {...fadeUp(0.5)} className="mt-9 flex gap-2.5 justify-center lg:justify-start">
+              {socials.map(({ Icon, href, label }) => (
+                <a
                   key={label}
                   href={href}
-                  target="_blank"
+                  target={href?.startsWith('mailto:') ? undefined : '_blank'}
                   rel="noopener noreferrer"
-                  className="p-3 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-blue-500 hover:text-white dark:hover:bg-blue-500 transition-colors"
-                  whileHover={{ scale: 1.1, rotate: 5 }}
-                  whileTap={{ scale: 0.9 }}
+                  className="icon-btn"
                   aria-label={label}
+                  title={label}
                 >
-                  <Icon className="w-5 h-5" />
-                </motion.a>
+                  <Icon className="w-[18px] h-[18px]" />
+                </a>
               ))}
             </motion.div>
-          </motion.div>
+          </div>
 
-          {/* Profile Image */}
+          {/* Portrait */}
           <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8 }}
-            className="flex-1 flex justify-center lg:justify-end"
+            initial={{ opacity: 0, scale: 0.94 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.7, delay: 0.15, ease: 'easeOut' }}
+            className="flex flex-col items-center"
           >
-            <motion.div
-              className="relative"
-              animate={{ y: [0, -20, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-            >
-              <div className="w-64 h-64 sm:w-80 sm:h-80 lg:w-96 lg:h-96 rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 p-2">
-                <div className="w-full h-full rounded-full bg-white dark:bg-gray-900 flex items-center justify-center overflow-hidden">
-                  {/* Profile image */}
-                  <img 
-                    src={portfolio?.profileImage || '/images/profile.jpg'} 
-                    alt="Profile" 
-                    className="w-full h-full object-cover object-top rounded-full"
-                  />
+            <div className="relative w-64 sm:w-80 lg:w-[22rem] aspect-square">
+              <div className="absolute inset-8 rounded-full blur-3xl opacity-80" style={{ background: 'var(--glow)' }} />
+              <div className="absolute -inset-5 rounded-full border border-dashed border-border-strong" />
+              <div className="absolute inset-0 rounded-full holo-ring" />
+              <div className="absolute inset-[3px] rounded-full bg-background" />
+              <img
+                src={portfolio.profileImage}
+                alt={portfolio.fullName}
+                width={352}
+                height={352}
+                className="absolute inset-[10px] w-[calc(100%-20px)] h-[calc(100%-20px)] rounded-full object-cover object-top"
+              />
+
+              {highlights.map((item, i) => (
+                <div
+                  key={item.label}
+                  className={`hidden sm:block absolute panel bg-surface px-4 py-2.5 float-slow ${
+                    ['-left-10 top-6', '-right-12 top-1/2 -translate-y-1/2', 'left-2 -bottom-6'][i % 3]
+                  }`}
+                  style={{ animationDelay: `${i * 1.3}s` }}
+                >
+                  <p className="font-display text-lg font-bold leading-none text-gradient">{item.value}</p>
+                  <p className="font-mono text-[10px] tracking-[0.12em] uppercase text-muted-foreground mt-1.5">{item.label}</p>
                 </div>
-              </div>
+              ))}
+            </div>
 
-              {/* Floating badges */}
-              <motion.div
-                className="absolute -top-4 -right-4 px-4 py-2 bg-white dark:bg-gray-800 rounded-full shadow-lg"
-                animate={{ rotate: [0, 5, 0, -5, 0] }}
-                transition={{ duration: 5, repeat: Infinity }}
-              >
-                <span className="text-2xl">🚀</span>
-              </motion.div>
-
-              <motion.div
-                className="absolute -bottom-4 -left-4 px-4 py-2 bg-white dark:bg-gray-800 rounded-full shadow-lg"
-                animate={{ rotate: [0, -5, 0, 5, 0] }}
-                transition={{ duration: 5, repeat: Infinity, delay: 1 }}
-              >
-                <span className="text-2xl">⚡</span>
-              </motion.div>
-            </motion.div>
+            {/* Highlights as a row on small screens */}
+            <div className="sm:hidden mt-8 grid grid-cols-3 gap-2 w-full max-w-sm">
+              {highlights.map((item) => (
+                <div key={item.label} className="panel px-2 py-3 text-center">
+                  <p className="font-display text-base font-bold text-gradient">{item.value}</p>
+                  <p className="font-mono text-[9px] tracking-[0.1em] uppercase text-muted-foreground mt-1">{item.label}</p>
+                </div>
+              ))}
+            </div>
           </motion.div>
         </div>
       </div>
+
+      <button
+        type="button"
+        onClick={() => scrollTo('about')}
+        className="hidden md:flex absolute bottom-7 left-1/2 -translate-x-1/2 z-10 flex-col items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+        aria-label="Scroll to About"
+      >
+        <span className="font-mono text-[10px] tracking-[0.3em] uppercase">Scroll</span>
+        <ArrowDown className="w-4 h-4 animate-bounce" />
+      </button>
     </section>
   );
 }

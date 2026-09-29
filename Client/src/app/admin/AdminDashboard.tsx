@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
-import { LogOut, MessageSquare, AlertCircle, Plus, Edit2, Trash2, ExternalLink } from 'lucide-react';
-import { portfolioAPI, messagesAPI, projectAPI, experienceAPI, skillAPI, caseStudyAPI, achievementAPI } from '@/utils/api';
+import { LogOut, MessageSquare, AlertCircle, Plus, Edit2, Trash2, ExternalLink, ArrowUpRight } from 'lucide-react';
+import { portfolioAPI, messagesAPI, projectAPI, experienceAPI, skillAPI, caseStudyAPI, achievementAPI, certificationAPI } from '@/utils/api';
+import { ThemeToggle } from '../components/Navbar';
 
 const ADMIN_API_BASE = import.meta.env.VITE_API_URL?.trim() || '';
 const getAdminToken = () => localStorage.getItem('portfolioToken') || localStorage.getItem('authToken') || localStorage.getItem('adminToken');
@@ -131,27 +132,34 @@ export default function AdminDashboard({ onUpdate }: AdminDashboardProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
-      <div className="bg-gray-800 border-b border-gray-700 p-6">
+      <div className="bg-surface border-b border-border p-6">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-            <p className="text-gray-400 mt-1">Manage your portfolio content</p>
+            <p className="text-muted-foreground mt-1">Manage your portfolio content</p>
           </div>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
-          >
-            <LogOut className="w-5 h-5" />
-            Logout
-          </button>
+          <div className="flex items-center gap-2">
+            <a href="/" className="hidden sm:flex items-center gap-1.5 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              View site
+              <ArrowUpRight className="w-4 h-4" />
+            </a>
+            <ThemeToggle />
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg transition-colors"
+            >
+              <LogOut className="w-5 h-5" />
+              Logout
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Navigation Tabs */}
-      <div className="bg-gray-800 border-b border-gray-700 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto flex flex-wrap">
+      <div className="bg-surface border-b border-border sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto flex overflow-x-auto">
           {[
             { id: 'overview', label: 'Overview', icon: '📊' },
             { id: 'profile', label: 'Profile', icon: '👤' },
@@ -159,6 +167,7 @@ export default function AdminDashboard({ onUpdate }: AdminDashboardProps) {
             { id: 'stats', label: 'Statistics', icon: '📈' },
             { id: 'projects', label: 'Projects', icon: '📁' },
             { id: 'achievements', label: 'Achievements', icon: '🏆' },
+            { id: 'certifications', label: 'Certifications', icon: '📜' },
             { id: 'experience', label: 'Experience', icon: '💼' },
             { id: 'skills', label: 'Skills', icon: '⚙️' },
             { id: 'messages', label: 'Messages', icon: '💬' },
@@ -166,10 +175,10 @@ export default function AdminDashboard({ onUpdate }: AdminDashboardProps) {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-6 py-4 border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${
+              className={`px-4 py-4 border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${
                 activeTab === tab.id
-                  ? 'border-blue-500 text-blue-400'
-                  : 'border-transparent text-gray-400 hover:text-gray-200'
+                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
               <span>{tab.icon}</span>
@@ -182,14 +191,14 @@ export default function AdminDashboard({ onUpdate }: AdminDashboardProps) {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto p-6">
         {error && (
-          <div className="bg-red-900/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg mb-6 flex items-center gap-2">
+          <div className="bg-red-500/10 border border-red-500 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg mb-6 flex items-center gap-2">
             <AlertCircle className="w-5 h-5" />
             {error}
           </div>
         )}
 
         {loading && (
-          <div className="bg-yellow-900/20 border border-yellow-600 text-yellow-200 px-4 py-3 rounded-lg mb-6 flex items-center gap-2">
+          <div className="bg-yellow-500/10 border border-yellow-600 text-yellow-800 dark:text-yellow-200 px-4 py-3 rounded-lg mb-6 flex items-center gap-2">
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-400"></div>
             Loading data...
           </div>
@@ -201,6 +210,7 @@ export default function AdminDashboard({ onUpdate }: AdminDashboardProps) {
         {activeTab === 'stats' && <StatsSection portfolio={portfolio} onUpdate={handleContentUpdate} />}
         {activeTab === 'projects' && <ProjectsSection onUpdate={handleContentUpdate} />}
         {activeTab === 'achievements' && <AchievementsSection onUpdate={handleContentUpdate} />}
+        {activeTab === 'certifications' && <CertificationsSection />}
         {activeTab === 'experience' && <ExperienceSection onUpdate={handleContentUpdate} />}
         {activeTab === 'skills' && <SkillsSection onUpdate={handleContentUpdate} />}
         {activeTab === 'messages' && <MessagesSection messages={messages} onUpdate={handleContentUpdate} />}
@@ -229,28 +239,28 @@ function OverviewSection({ portfolio, stats, messages }: any) {
     >
       {/* Stats Grid */}
       <div className="grid md:grid-cols-3 gap-6">
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+        <div className="bg-surface border border-border rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">Portfolio Views</p>
+              <p className="text-muted-foreground text-sm">Portfolio Views</p>
               <p className="text-2xl font-bold mt-2">{stats?.viewCount || 0}</p>
             </div>
             <span className="text-4xl">👁️</span>
           </div>
         </div>
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+        <div className="bg-surface border border-border rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">Total Messages</p>
+              <p className="text-muted-foreground text-sm">Total Messages</p>
               <p className="text-2xl font-bold mt-2">{(messages && messages.length) || 0}</p>
             </div>
             <span className="text-4xl">💬</span>
           </div>
         </div>
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+        <div className="bg-surface border border-border rounded-lg p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">Last Updated</p>
+              <p className="text-muted-foreground text-sm">Last Updated</p>
               <p className="text-2xl font-bold mt-2">{getLastUpdated()}</p>
             </div>
             <span className="text-4xl">🔄</span>
@@ -259,7 +269,7 @@ function OverviewSection({ portfolio, stats, messages }: any) {
       </div>
 
       {/* Recent Messages */}
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+      <div className="bg-surface border border-border rounded-lg p-6">
         <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
           <MessageSquare className="w-5 h-5" />
           Recent Messages
@@ -267,42 +277,42 @@ function OverviewSection({ portfolio, stats, messages }: any) {
         <div className="space-y-2">
           {(messages && messages.length > 0) ? (
             messages.slice(0, 5).map((msg: any) => (
-              <div key={msg._id} className="bg-gray-700 p-3 rounded flex items-center justify-between">
+              <div key={msg._id} className="bg-surface-2 p-3 rounded flex items-center justify-between">
                 <div>
                   <p className="font-semibold">{msg.name || 'Unknown'}</p>
-                  <p className="text-gray-400 text-sm">{(msg.message || '').substring(0, 50)}...</p>
+                  <p className="text-muted-foreground text-sm">{(msg.message || '').substring(0, 50)}...</p>
                 </div>
-                <span className={`px-3 py-1 rounded text-xs ${msg.isRead ? 'bg-gray-600' : 'bg-blue-600'}`}>
+                <span className={`px-3 py-1 rounded text-xs ${msg.isRead ? 'bg-surface-3' : 'bg-blue-600 text-white'}`}>
                   {msg.isRead ? 'Read' : 'Unread'}
                 </span>
               </div>
             ))
           ) : (
-            <p className="text-gray-400 text-sm">No messages yet or loading...</p>
+            <p className="text-muted-foreground text-sm">No messages yet or loading...</p>
           )}
         </div>
       </div>
 
       {/* Portfolio Info */}
       {portfolio && (
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+        <div className="bg-surface border border-border rounded-lg p-6">
           <h3 className="text-xl font-bold mb-4">Portfolio Information</h3>
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <p className="text-gray-400 text-sm">Name</p>
-              <p className="text-white font-semibold">{portfolio.fullName || 'Not set'}</p>
+              <p className="text-muted-foreground text-sm">Name</p>
+              <p className="text-foreground font-semibold">{portfolio.fullName || 'Not set'}</p>
             </div>
             <div>
-              <p className="text-gray-400 text-sm">Title</p>
-              <p className="text-white font-semibold">{portfolio.title || 'Not set'}</p>
+              <p className="text-muted-foreground text-sm">Title</p>
+              <p className="text-foreground font-semibold">{portfolio.title || 'Not set'}</p>
             </div>
             <div>
-              <p className="text-gray-400 text-sm">Email</p>
-              <p className="text-white font-semibold">{portfolio.email || 'Not set'}</p>
+              <p className="text-muted-foreground text-sm">Email</p>
+              <p className="text-foreground font-semibold">{portfolio.email || 'Not set'}</p>
             </div>
             <div>
-              <p className="text-gray-400 text-sm">Location</p>
-              <p className="text-white font-semibold">{portfolio.location || 'Not set'}</p>
+              <p className="text-muted-foreground text-sm">Location</p>
+              <p className="text-foreground font-semibold">{portfolio.location || 'Not set'}</p>
             </div>
           </div>
         </div>
@@ -421,20 +431,20 @@ function AboutSection({ portfolio, onUpdate }: any) {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
       {/* About Description Editor */}
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+      <div className="bg-surface border border-border rounded-lg p-6">
         <h2 className="text-2xl font-bold mb-4">Edit About Description</h2>
-        <p className="text-gray-400 text-sm mb-4">This text appears in the main About section of your portfolio.</p>
+        <p className="text-muted-foreground text-sm mb-4">This text appears in the main About section of your portfolio.</p>
         
         <textarea
           value={aboutDescription}
           onChange={(e) => setAboutDescription(e.target.value)}
           rows={8}
-          className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded text-white focus:border-blue-500 focus:outline-none resize-vertical"
+          className="w-full px-4 py-3 bg-surface-2 border border-border-strong rounded text-foreground focus:border-blue-500 focus:outline-none resize-vertical"
           placeholder="Enter your about description..."
         />
 
         {descriptionMessage && (
-          <div className={`mt-3 px-4 py-2 rounded text-sm ${descriptionMessage.includes('✅') ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}`}>
+          <div className={`mt-3 px-4 py-2 rounded text-sm ${descriptionMessage.includes('✅') ? 'bg-green-500/10 text-green-700 dark:text-green-400' : 'bg-red-500/10 text-red-700 dark:text-red-400'}`}>
             {descriptionMessage}
           </div>
         )}
@@ -443,7 +453,7 @@ function AboutSection({ portfolio, onUpdate }: any) {
           <button
             onClick={handleSaveDescription}
             disabled={isLoadingDescription}
-            className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-foreground rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoadingDescription ? 'Saving...' : 'Save Description'}
           </button>
@@ -456,25 +466,25 @@ function AboutSection({ portfolio, onUpdate }: any) {
           <h2 className="text-2xl font-bold">About Me Highlights</h2>
           <button
             onClick={handleAddNew}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors"
           >
             <Plus className="w-5 h-5" />
             Add Highlight
           </button>
         </div>
 
-        <div className="bg-blue-900/10 border border-blue-700/30 rounded-lg p-4 mb-6">
-          <p className="text-sm text-gray-300">Edit the highlights that appear in your About Me section. Each highlight has a title, description, and icon.</p>
+        <div className="bg-blue-500/5 border border-blue-700/30 rounded-lg p-4 mb-6">
+          <p className="text-sm text-foreground/80">Edit the highlights that appear in your About Me section. Each highlight has a title, description, and icon.</p>
         </div>
 
         {showForm && (
-          <form onSubmit={handleSubmit} className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4 mb-6">
+          <form onSubmit={handleSubmit} className="bg-surface border border-border rounded-lg p-6 space-y-4 mb-6">
             <input
               type="text"
               placeholder="Highlight Title"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+              className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
               required
             />
             <textarea
@@ -482,7 +492,7 @@ function AboutSection({ portfolio, onUpdate }: any) {
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
-              className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+              className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
               required
             />
             <input
@@ -490,19 +500,19 @@ function AboutSection({ portfolio, onUpdate }: any) {
               placeholder="Icon Name (e.g., Code, Lightbulb, Users, Target)"
               value={formData.icon}
               onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-              className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+              className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
             />
             <div className="flex gap-3">
               <button
                 type="submit"
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+                className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition-colors"
               >
                 {editingId ? 'Update' : 'Create'}
               </button>
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg transition-colors"
+                className="px-4 py-2 bg-surface-3 hover:bg-surface-3 rounded-lg transition-colors"
               >
                 Cancel
               </button>
@@ -512,25 +522,25 @@ function AboutSection({ portfolio, onUpdate }: any) {
 
         <div className="grid md:grid-cols-2 gap-6">
           {aboutData.map((item) => (
-            <div key={item.id} className="bg-gray-800 border border-gray-700 rounded-lg p-6 hover:border-gray-600 transition-colors">
+            <div key={item.id} className="bg-surface border border-border rounded-lg p-6 hover:border-border-strong transition-colors">
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <h3 className="text-lg font-bold text-white mb-1">{item.title}</h3>
-                  <p className="text-gray-400 text-sm">{item.description}</p>
+                  <h3 className="text-lg font-bold text-foreground mb-1">{item.title}</h3>
+                  <p className="text-muted-foreground text-sm">{item.description}</p>
                 </div>
                 <span className="text-2xl ml-2">{item.icon}</span>
               </div>
-              <div className="flex gap-2 pt-3 border-t border-gray-700">
+              <div className="flex gap-2 pt-3 border-t border-border">
                 <button
                   onClick={() => handleEdit(item)}
-                  className="flex items-center gap-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm transition-colors"
+                  className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white hover:bg-blue-700 rounded text-sm transition-colors"
                 >
                   <Edit2 className="w-4 h-4" />
                   Edit
                 </button>
                 <button
                   onClick={() => handleDelete(item.id)}
-                  className="flex items-center gap-1 px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm transition-colors"
+                  className="flex items-center gap-1 px-3 py-1 bg-red-600 text-white hover:bg-red-700 rounded text-sm transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
                   Delete
@@ -652,7 +662,7 @@ function ProfileSection({ portfolio, onUpdate }: any) {
               alt="Profile"
               className="w-40 h-40 rounded-full object-cover border-4 border-blue-500 shadow-xl"
             />
-            <label className="absolute bottom-0 right-0 p-2 bg-blue-600 hover:bg-blue-700 rounded-full cursor-pointer transition-colors shadow-lg">
+            <label className="absolute bottom-0 right-0 p-2 bg-blue-600 text-white hover:bg-blue-700 rounded-full cursor-pointer transition-colors shadow-lg">
               <input
                 type="file"
                 accept="image/*"
@@ -660,22 +670,22 @@ function ProfileSection({ portfolio, onUpdate }: any) {
                 disabled={loading}
                 className="hidden"
               />
-              <span className="text-white text-xl">📸</span>
+              <span className="text-foreground text-xl">📸</span>
             </label>
           </div>
 
           <div className="flex-1 text-center md:text-left">
-            <h1 className="text-3xl font-bold text-white mb-2">{formData.fullName || 'Your Name'}</h1>
-            <p className="text-blue-400 text-lg mb-2">{formData.title || 'Your Title'}</p>
-            <p className="text-gray-300 mb-4">{formData.location || 'Location'}</p>
+            <h1 className="text-3xl font-bold text-foreground mb-2">{formData.fullName || 'Your Name'}</h1>
+            <p className="text-blue-600 dark:text-blue-400 text-lg mb-2">{formData.title || 'Your Title'}</p>
+            <p className="text-foreground/80 mb-4">{formData.location || 'Location'}</p>
             <div className="flex flex-wrap gap-2 justify-center md:justify-start">
               {formData.email && (
-                <span className="px-3 py-1 bg-blue-600/20 text-blue-300 text-sm rounded-full border border-blue-500/30">
+                <span className="px-3 py-1 bg-blue-600/20 text-blue-700 dark:text-blue-300 text-sm rounded-full border border-blue-500/30">
                   ✉️ {formData.email}
                 </span>
               )}
               {formData.phone && (
-                <span className="px-3 py-1 bg-purple-600/20 text-purple-300 text-sm rounded-full border border-purple-500/30">
+                <span className="px-3 py-1 bg-purple-600/20 text-purple-700 dark:text-purple-300 text-sm rounded-full border border-purple-500/30">
                   ☎️ {formData.phone}
                 </span>
               )}
@@ -685,7 +695,7 @@ function ProfileSection({ portfolio, onUpdate }: any) {
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex gap-2 border-b border-gray-700">
+      <div className="flex gap-2 border-b border-border">
         {[
           { id: 'personal', label: '👤 Personal Info' },
           { id: 'contact', label: '📞 Contact' },
@@ -696,8 +706,8 @@ function ProfileSection({ portfolio, onUpdate }: any) {
             onClick={() => setActiveTab(tab.id)}
             className={`px-4 py-3 font-medium border-b-2 transition-all ${
               activeTab === tab.id
-                ? 'border-blue-500 text-blue-400'
-                : 'border-transparent text-gray-400 hover:text-gray-200'
+                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
             {tab.label}
@@ -712,47 +722,47 @@ function ProfileSection({ portfolio, onUpdate }: any) {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
             <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium mb-2 text-gray-300">Full Name *</label>
+                <label className="block text-sm font-medium mb-2 text-foreground/80">Full Name *</label>
                 <input
                   type="text"
                   required
                   value={formData.fullName}
                   onChange={(e) => handleInputChange('fullName', e.target.value)}
-                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-surface-2 border border-border-strong rounded-lg px-4 py-3 text-foreground focus:outline-none focus:border-blue-500 transition-colors"
                   placeholder="Your full name"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2 text-gray-300">Professional Title *</label>
+                <label className="block text-sm font-medium mb-2 text-foreground/80">Professional Title *</label>
                 <input
                   type="text"
                   required
                   value={formData.title}
                   onChange={(e) => handleInputChange('title', e.target.value)}
-                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-surface-2 border border-border-strong rounded-lg px-4 py-3 text-foreground focus:outline-none focus:border-blue-500 transition-colors"
                   placeholder="e.g., Full Stack Developer"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2 text-gray-300">Bio</label>
+              <label className="block text-sm font-medium mb-2 text-foreground/80">Bio</label>
               <textarea
                 value={formData.bio}
                 onChange={(e) => handleInputChange('bio', e.target.value)}
                 rows={5}
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                className="w-full bg-surface-2 border border-border-strong rounded-lg px-4 py-3 text-foreground focus:outline-none focus:border-blue-500 transition-colors"
                 placeholder="Tell us about yourself, your experience, and interests..."
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2 text-gray-300">Resume Link (Google Drive)</label>
+              <label className="block text-sm font-medium mb-2 text-foreground/80">Resume Link (Google Drive)</label>
               <input
                 type="url"
                 value={formData.resumeLink}
                 onChange={(e) => handleInputChange('resumeLink', e.target.value)}
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                className="w-full bg-surface-2 border border-border-strong rounded-lg px-4 py-3 text-foreground focus:outline-none focus:border-blue-500 transition-colors"
                 placeholder="https://drive.google.com/..."
               />
             </div>
@@ -764,35 +774,35 @@ function ProfileSection({ portfolio, onUpdate }: any) {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
             <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium mb-2 text-gray-300">Email *</label>
+                <label className="block text-sm font-medium mb-2 text-foreground/80">Email *</label>
                 <input
                   type="email"
                   required
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
-                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-surface-2 border border-border-strong rounded-lg px-4 py-3 text-foreground focus:outline-none focus:border-blue-500 transition-colors"
                   placeholder="your.email@example.com"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2 text-gray-300">Phone</label>
+                <label className="block text-sm font-medium mb-2 text-foreground/80">Phone</label>
                 <input
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => handleInputChange('phone', e.target.value)}
-                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-surface-2 border border-border-strong rounded-lg px-4 py-3 text-foreground focus:outline-none focus:border-blue-500 transition-colors"
                   placeholder="+1 (555) 123-4567"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2 text-gray-300">Location</label>
+              <label className="block text-sm font-medium mb-2 text-foreground/80">Location</label>
               <input
                 type="text"
                 value={formData.location}
                 onChange={(e) => handleInputChange('location', e.target.value)}
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                className="w-full bg-surface-2 border border-border-strong rounded-lg px-4 py-3 text-foreground focus:outline-none focus:border-blue-500 transition-colors"
                 placeholder="City, Country"
               />
             </div>
@@ -802,8 +812,8 @@ function ProfileSection({ portfolio, onUpdate }: any) {
         {/* Social Links Tab */}
         {activeTab === 'social' && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-            <div className="bg-blue-900/10 border border-blue-700/30 rounded-lg p-4 mb-4">
-              <p className="text-sm text-gray-300">Add links to your social media profiles. These will be displayed on your portfolio.</p>
+            <div className="bg-blue-500/5 border border-blue-700/30 rounded-lg p-4 mb-4">
+              <p className="text-sm text-foreground/80">Add links to your social media profiles. These will be displayed on your portfolio.</p>
             </div>
 
             {[
@@ -812,14 +822,14 @@ function ProfileSection({ portfolio, onUpdate }: any) {
               { name: 'twitter', icon: '𝕏', placeholder: 'https://twitter.com/username' },
             ].map(({ name, icon, placeholder }) => (
               <div key={name}>
-                <label className="block text-sm font-medium mb-2 text-gray-300">
+                <label className="block text-sm font-medium mb-2 text-foreground/80">
                   {icon} {name.charAt(0).toUpperCase() + name.slice(1)}
                 </label>
                 <input
                   type="url"
                   value={formData.socialLinks?.[name] || ''}
                   onChange={(e) => handleSocialUpdate(name, e.target.value)}
-                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-surface-2 border border-border-strong rounded-lg px-4 py-3 text-foreground focus:outline-none focus:border-blue-500 transition-colors"
                   placeholder={placeholder}
                 />
               </div>
@@ -828,11 +838,11 @@ function ProfileSection({ portfolio, onUpdate }: any) {
         )}
 
         {/* Save Button */}
-        <div className="flex gap-3 pt-4 border-t border-gray-700">
+        <div className="flex gap-3 pt-4 border-t border-border">
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold rounded-lg transition-all shadow-lg"
+            className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:from-gray-600 disabled:to-gray-700 text-foreground font-semibold rounded-lg transition-all shadow-lg"
           >
             {loading ? '💾 Saving...' : '💾 Save Changes'}
           </button>
@@ -899,25 +909,25 @@ function MessagesSection({ messages, onUpdate }: any) {
     >
       {(messages && messages.length > 0) ? (
         messages.map((msg: any) => (
-          <div key={msg._id} className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+          <div key={msg._id} className="bg-surface border border-border rounded-lg p-6">
             <div className="flex justify-between items-start mb-3">
               <div>
                 <h4 className="font-bold text-lg">{msg.name || 'Unknown'}</h4>
-                <p className="text-gray-400 text-sm">{msg.email || 'No email'}</p>
+                <p className="text-muted-foreground text-sm">{msg.email || 'No email'}</p>
               </div>
-              <span className={`px-3 py-1 rounded text-xs ${isMessageRead(msg) ? 'bg-gray-600' : 'bg-blue-600'}`}>
+              <span className={`px-3 py-1 rounded text-xs ${isMessageRead(msg) ? 'bg-surface-3' : 'bg-blue-600 text-white'}`}>
                 {isMessageRead(msg) ? 'Read' : 'Unread'}
               </span>
             </div>
-            <p className="text-gray-300 mb-3">{msg.message || 'No message content'}</p>
+            <p className="text-foreground/80 mb-3">{msg.message || 'No message content'}</p>
             <div className="flex items-center justify-between gap-4">
-              <p className="text-xs text-gray-500">{getFormattedDate(msg.createdAt)}</p>
+              <p className="text-xs text-muted-foreground">{getFormattedDate(msg.createdAt)}</p>
               <div className="flex gap-2">
                 {!isMessageRead(msg) && (
                   <button
                     onClick={() => handleMarkAsRead(msg._id)}
                     disabled={actionLoadingId === msg._id}
-                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800/60 disabled:cursor-not-allowed rounded text-sm transition-colors"
+                    className="px-3 py-1 bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-800/60 disabled:cursor-not-allowed rounded text-sm transition-colors"
                   >
                     {actionLoadingId === msg._id ? 'Working...' : 'Mark Read'}
                   </button>
@@ -925,7 +935,7 @@ function MessagesSection({ messages, onUpdate }: any) {
                 <button
                   onClick={() => handleDelete(msg._id)}
                   disabled={actionLoadingId === msg._id}
-                  className="flex items-center gap-1 px-3 py-1 bg-red-600 hover:bg-red-700 disabled:bg-red-800/60 disabled:cursor-not-allowed rounded text-sm transition-colors"
+                  className="flex items-center gap-1 px-3 py-1 bg-red-600 text-white hover:bg-red-700 disabled:bg-red-800/60 disabled:cursor-not-allowed rounded text-sm transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
                   {actionLoadingId === msg._id ? 'Working...' : 'Delete'}
@@ -935,8 +945,8 @@ function MessagesSection({ messages, onUpdate }: any) {
           </div>
         ))
       ) : (
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
-          <p className="text-gray-400">No messages yet</p>
+        <div className="bg-surface border border-border rounded-lg p-6 text-center">
+          <p className="text-muted-foreground">No messages yet</p>
         </div>
       )}
     </motion.div>
@@ -1068,7 +1078,7 @@ function ProjectsSection({ onUpdate }: any) {
         <h2 className="text-2xl font-bold">Manage Projects</h2>
         <button
           onClick={handleAddNew}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors"
         >
           <Plus className="w-5 h-5" />
           Add Project
@@ -1076,13 +1086,13 @@ function ProjectsSection({ onUpdate }: any) {
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="bg-surface border border-border rounded-lg p-6 space-y-4">
           <input
             type="text"
             placeholder="Project Title"
             value={formData.title}
             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
             required
           />
           <textarea
@@ -1090,7 +1100,7 @@ function ProjectsSection({ onUpdate }: any) {
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             rows={3}
-            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
             required
           />
           <input
@@ -1098,7 +1108,7 @@ function ProjectsSection({ onUpdate }: any) {
             placeholder="Image URL"
             value={formData.imageUrl}
             onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
             required
           />
           <input
@@ -1106,34 +1116,34 @@ function ProjectsSection({ onUpdate }: any) {
             placeholder="Tech Stack (comma separated)"
             value={formData.techStack}
             onChange={(e) => setFormData({ ...formData, techStack: e.target.value })}
-            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
           />
           <input
             type="url"
             placeholder="Live Link"
             value={formData.liveLink}
             onChange={(e) => setFormData({ ...formData, liveLink: e.target.value })}
-            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
           />
           <input
             type="url"
             placeholder="GitHub Link"
             value={formData.githubLink}
             onChange={(e) => setFormData({ ...formData, githubLink: e.target.value })}
-            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
           />
           <div className="flex gap-3">
             <button
               type="submit"
               disabled={saving}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+              className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition-colors"
             >
               {saving ? 'Saving...' : editingId ? 'Update' : 'Create'}
             </button>
             <button
               type="button"
               onClick={() => setShowForm(false)}
-              className="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg transition-colors"
+              className="px-4 py-2 bg-surface-3 hover:bg-surface-3 rounded-lg transition-colors"
             >
               Cancel
             </button>
@@ -1142,16 +1152,16 @@ function ProjectsSection({ onUpdate }: any) {
       )}
 
       {loading ? (
-        <p className="text-gray-400">Loading projects...</p>
+        <p className="text-muted-foreground">Loading projects...</p>
       ) : (
         <div className="grid md:grid-cols-2 gap-6">
           {projects.map((project) => (
-            <div key={project._id} className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+            <div key={project._id} className="bg-surface border border-border rounded-lg p-4">
               <h3 className="text-lg font-bold mb-2">{project.title}</h3>
-              <p className="text-gray-400 text-sm mb-2">{project.description}</p>
+              <p className="text-muted-foreground text-sm mb-2">{project.description}</p>
               <div className="flex gap-2 flex-wrap mb-3">
                 {project.techStack?.map((tech: string) => (
-                  <span key={tech} className="px-2 py-1 bg-blue-900/30 text-blue-200 text-xs rounded">
+                  <span key={tech} className="px-2 py-1 bg-blue-500/10 text-blue-800 dark:text-blue-200 text-xs rounded">
                     {tech}
                   </span>
                 ))}
@@ -1159,14 +1169,14 @@ function ProjectsSection({ onUpdate }: any) {
               <div className="flex gap-2">
                 <button
                   onClick={() => handleEdit(project)}
-                  className="flex items-center gap-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm transition-colors"
+                  className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white hover:bg-blue-700 rounded text-sm transition-colors"
                 >
                   <Edit2 className="w-4 h-4" />
                   Edit
                 </button>
                 <button
                   onClick={() => handleDelete(project._id)}
-                  className="flex items-center gap-1 px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm transition-colors"
+                  className="flex items-center gap-1 px-3 py-1 bg-red-600 text-white hover:bg-red-700 rounded text-sm transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
                   Delete
@@ -1294,7 +1304,7 @@ function ExperienceSection({ onUpdate }: any) {
         <h2 className="text-2xl font-bold">Manage Experience</h2>
         <button
           onClick={handleAddNew}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors"
         >
           <Plus className="w-5 h-5" />
           Add Experience
@@ -1302,13 +1312,13 @@ function ExperienceSection({ onUpdate }: any) {
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="bg-surface border border-border rounded-lg p-6 space-y-4">
           <input
             type="text"
             placeholder="Job Title"
             value={formData.title}
             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
             required
           />
           <input
@@ -1316,7 +1326,7 @@ function ExperienceSection({ onUpdate }: any) {
             placeholder="Company"
             value={formData.company}
             onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
             required
           />
           <input
@@ -1324,27 +1334,27 @@ function ExperienceSection({ onUpdate }: any) {
             placeholder="Location"
             value={formData.location}
             onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
           />
           <textarea
             placeholder="Description"
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             rows={3}
-            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
           />
           <input
             type="date"
             value={formData.startDate}
             onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
             required
           />
           <input
             type="date"
             value={formData.endDate}
             onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
             disabled={formData.isCurrentRole}
           />
           <label className="flex items-center gap-2 cursor-pointer">
@@ -1361,12 +1371,12 @@ function ExperienceSection({ onUpdate }: any) {
             placeholder="Technologies (comma separated)"
             value={formData.technologies}
             onChange={(e) => setFormData({ ...formData, technologies: e.target.value })}
-            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
           />
           <select
             value={formData.gradient || 'from-blue-500 to-cyan-500'}
             onChange={(e) => setFormData({ ...formData, gradient: e.target.value })}
-            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
           >
             <option value="from-blue-500 to-cyan-500">Blue/Cyan</option>
             <option value="from-purple-500 to-pink-500">Purple/Pink</option>
@@ -1378,7 +1388,7 @@ function ExperienceSection({ onUpdate }: any) {
           <select
             value={formData.color || 'blue'}
             onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
           >
             <option value="blue">Blue</option>
             <option value="purple">Purple</option>
@@ -1390,14 +1400,14 @@ function ExperienceSection({ onUpdate }: any) {
           <div className="flex gap-3">
             <button
               type="submit"
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+              className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition-colors"
             >
               {editingId ? 'Update' : 'Create'}
             </button>
             <button
               type="button"
               onClick={() => setShowForm(false)}
-              className="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg transition-colors"
+              className="px-4 py-2 bg-surface-3 hover:bg-surface-3 rounded-lg transition-colors"
             >
               Cancel
             </button>
@@ -1406,26 +1416,26 @@ function ExperienceSection({ onUpdate }: any) {
       )}
 
       {loading ? (
-        <p className="text-gray-400">Loading experiences...</p>
+        <p className="text-muted-foreground">Loading experiences...</p>
       ) : (
         <div className="space-y-4">
           {experiences.map((exp) => (
-            <div key={exp._id} className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+            <div key={exp._id} className="bg-surface border border-border rounded-lg p-4">
               <div className="flex justify-between items-start mb-2">
                 <div>
                   <h3 className="text-lg font-bold">{exp.title}</h3>
-                  <p className="text-blue-400">{exp.company}</p>
-                  <p className="text-gray-400 text-sm">
+                  <p className="text-blue-600 dark:text-blue-400">{exp.company}</p>
+                  <p className="text-muted-foreground text-sm">
                     {new Date(exp.startDate).toLocaleDateString()} -{' '}
                     {exp.isCurrentRole ? 'Present' : new Date(exp.endDate).toLocaleDateString()}
                   </p>
                 </div>
               </div>
-              <p className="text-gray-400 text-sm mb-2">{exp.description}</p>
+              <p className="text-muted-foreground text-sm mb-2">{exp.description}</p>
               {exp.technologies?.length > 0 && (
                 <div className="flex gap-2 flex-wrap mb-3">
                   {exp.technologies.map((tech: string) => (
-                    <span key={tech} className="px-2 py-1 bg-green-900/30 text-green-200 text-xs rounded">
+                    <span key={tech} className="px-2 py-1 bg-green-500/10 text-green-800 dark:text-green-200 text-xs rounded">
                       {tech}
                     </span>
                   ))}
@@ -1434,14 +1444,14 @@ function ExperienceSection({ onUpdate }: any) {
               <div className="flex gap-2">
                 <button
                   onClick={() => handleEdit(exp)}
-                  className="flex items-center gap-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm transition-colors"
+                  className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white hover:bg-blue-700 rounded text-sm transition-colors"
                 >
                   <Edit2 className="w-4 h-4" />
                   Edit
                 </button>
                 <button
                   onClick={() => handleDelete(exp._id)}
-                  className="flex items-center gap-1 px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm transition-colors"
+                  className="flex items-center gap-1 px-3 py-1 bg-red-600 text-white hover:bg-red-700 rounded text-sm transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
                   Delete
@@ -1557,27 +1567,27 @@ function SkillsSection({ onUpdate }: any) {
         <h2 className="text-2xl font-bold">Manage Skills</h2>
         <button
           onClick={handleAddNew}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors"
         >
           <Plus className="w-5 h-5" />
           Add Skill Category
         </button>
       </div>
 
-      <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-4 text-sm text-blue-200">
+      <div className="bg-blue-500/10 border border-blue-700 rounded-lg p-4 text-sm text-blue-800 dark:text-blue-200">
         <strong>Format:</strong> SkillName:proficiency:years (e.g., React:expert:5|TypeScript:advanced:4)
         <br />
         <strong>Proficiency:</strong> beginner, intermediate, advanced, expert
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="bg-surface border border-border rounded-lg p-6 space-y-4">
           <input
             type="text"
             placeholder="Category Name (e.g., Frontend, Backend)"
             value={formData.category}
             onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
             required
           />
           <textarea
@@ -1585,20 +1595,20 @@ function SkillsSection({ onUpdate }: any) {
             value={formData.skillsData}
             onChange={(e) => setFormData({ ...formData, skillsData: e.target.value })}
             rows={4}
-            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500 font-mono text-sm"
+            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500 font-mono text-sm"
             required
           />
           <div className="flex gap-3">
             <button
               type="submit"
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+              className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition-colors"
             >
               {editingId ? 'Update' : 'Create'}
             </button>
             <button
               type="button"
               onClick={() => setShowForm(false)}
-              className="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg transition-colors"
+              className="px-4 py-2 bg-surface-3 hover:bg-surface-3 rounded-lg transition-colors"
             >
               Cancel
             </button>
@@ -1607,17 +1617,17 @@ function SkillsSection({ onUpdate }: any) {
       )}
 
       {loading ? (
-        <p className="text-gray-400">Loading skills...</p>
+        <p className="text-muted-foreground">Loading skills...</p>
       ) : (
         <div className="grid md:grid-cols-2 gap-6">
           {skills.map((skill) => (
-            <div key={skill._id} className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+            <div key={skill._id} className="bg-surface border border-border rounded-lg p-4">
               <h3 className="text-lg font-bold mb-3">{skill.category}</h3>
               <div className="space-y-2 mb-3">
                 {skill.skills?.map((s: any) => (
                   <div key={s.name} className="text-sm">
-                    <p className="text-gray-300">
-                      {s.name} <span className="text-gray-500">({s.proficiency})</span>
+                    <p className="text-foreground/80">
+                      {s.name} <span className="text-muted-foreground">({s.proficiency})</span>
                     </p>
                   </div>
                 ))}
@@ -1625,14 +1635,14 @@ function SkillsSection({ onUpdate }: any) {
               <div className="flex gap-2">
                 <button
                   onClick={() => handleEdit(skill)}
-                  className="flex items-center gap-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm transition-colors"
+                  className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white hover:bg-blue-700 rounded text-sm transition-colors"
                 >
                   <Edit2 className="w-4 h-4" />
                   Edit
                 </button>
                 <button
                   onClick={() => handleDelete(skill._id)}
-                  className="flex items-center gap-1 px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm transition-colors"
+                  className="flex items-center gap-1 px-3 py-1 bg-red-600 text-white hover:bg-red-700 rounded text-sm transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
                   Delete
@@ -1718,7 +1728,7 @@ function StatsSection({ portfolio, onUpdate }: any) {
       transition={{ duration: 0.5 }}
       className="space-y-6"
     >
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-8">
+      <div className="bg-surface border border-border rounded-lg p-8">
         <h2 className="text-2xl font-bold mb-8">Edit Statistics</h2>
 
         <div className="grid md:grid-cols-2 gap-8">
@@ -1731,9 +1741,9 @@ function StatsSection({ portfolio, onUpdate }: any) {
                 min="0"
                 value={stats.projectsCompleted || 50}
                 onChange={(e) => handleStatChange('projectsCompleted', parseInt(e.target.value) || 0)}
-                className="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 rounded text-white focus:border-blue-500 focus:outline-none"
+                className="flex-1 px-4 py-2 bg-surface-2 border border-border-strong rounded text-foreground focus:border-blue-500 focus:outline-none"
               />
-              <span className="text-gray-400">+</span>
+              <span className="text-muted-foreground">+</span>
             </div>
           </div>
 
@@ -1746,9 +1756,9 @@ function StatsSection({ portfolio, onUpdate }: any) {
                 min="0"
                 value={stats.yearsExperience || 5}
                 onChange={(e) => handleStatChange('yearsExperience', parseInt(e.target.value) || 0)}
-                className="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 rounded text-white focus:border-blue-500 focus:outline-none"
+                className="flex-1 px-4 py-2 bg-surface-2 border border-border-strong rounded text-foreground focus:border-blue-500 focus:outline-none"
               />
-              <span className="text-gray-400">+</span>
+              <span className="text-muted-foreground">+</span>
             </div>
           </div>
 
@@ -1761,9 +1771,9 @@ function StatsSection({ portfolio, onUpdate }: any) {
                 min="0"
                 value={stats.usersImpacted || 100}
                 onChange={(e) => handleStatChange('usersImpacted', parseInt(e.target.value) || 0)}
-                className="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 rounded text-white focus:border-blue-500 focus:outline-none"
+                className="flex-1 px-4 py-2 bg-surface-2 border border-border-strong rounded text-foreground focus:border-blue-500 focus:outline-none"
               />
-              <span className="text-gray-400">K+</span>
+              <span className="text-muted-foreground">K+</span>
             </div>
           </div>
 
@@ -1776,15 +1786,15 @@ function StatsSection({ portfolio, onUpdate }: any) {
                 min="0"
                 value={stats.technologiesCount || 15}
                 onChange={(e) => handleStatChange('technologiesCount', parseInt(e.target.value) || 0)}
-                className="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 rounded text-white focus:border-blue-500 focus:outline-none"
+                className="flex-1 px-4 py-2 bg-surface-2 border border-border-strong rounded text-foreground focus:border-blue-500 focus:outline-none"
               />
-              <span className="text-gray-400">+</span>
+              <span className="text-muted-foreground">+</span>
             </div>
           </div>
         </div>
 
         {/* Preview */}
-        <div className="mt-8 pt-8 border-t border-gray-700">
+        <div className="mt-8 pt-8 border-t border-border">
           <h3 className="text-lg font-semibold mb-4">Preview</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
@@ -1793,11 +1803,11 @@ function StatsSection({ portfolio, onUpdate }: any) {
               { number: `${stats.usersImpacted}K+`, label: 'Users Impacted' },
               { number: `${stats.technologiesCount}+`, label: 'Technologies' },
             ].map((stat) => (
-              <div key={stat.label} className="p-4 bg-gray-700 rounded-lg text-center">
+              <div key={stat.label} className="p-4 bg-surface-2 rounded-lg text-center">
                 <div className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
                   {stat.number}
                 </div>
-                <div className="text-xs text-gray-400 mt-1">{stat.label}</div>
+                <div className="text-xs text-muted-foreground mt-1">{stat.label}</div>
               </div>
             ))}
           </div>
@@ -1805,7 +1815,7 @@ function StatsSection({ portfolio, onUpdate }: any) {
 
         {/* Message */}
         {message && (
-          <div className={`mt-4 px-4 py-2 rounded text-sm ${message.includes('✅') ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}`}>
+          <div className={`mt-4 px-4 py-2 rounded text-sm ${message.includes('✅') ? 'bg-green-500/10 text-green-700 dark:text-green-400' : 'bg-red-500/10 text-red-700 dark:text-red-400'}`}>
             {message}
           </div>
         )}
@@ -1815,7 +1825,7 @@ function StatsSection({ portfolio, onUpdate }: any) {
           <button
             onClick={handleSaveStats}
             disabled={isLoading}
-            className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-foreground rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
           </button>
         </div>
@@ -1845,7 +1855,7 @@ function AchievementsSection({ onUpdate }: any) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
-  const iconOptions = ['Award', 'Target', 'Users', 'Zap'];
+  const iconOptions = ['Award', 'Target', 'Users', 'Zap', 'Code', 'Megaphone'];
   const gradientOptions = [
     { label: 'Blue/Cyan', value: 'from-blue-500 to-cyan-500' },
     { label: 'Purple/Pink', value: 'from-purple-500 to-pink-500' },
@@ -2015,7 +2025,7 @@ function AchievementsSection({ onUpdate }: any) {
         <h2 className="text-2xl font-bold">Leadership & Achievements</h2>
         <button
           onClick={handleAddNew}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors"
         >
           <Plus className="w-5 h-5" />
           Add Achievement
@@ -2023,20 +2033,20 @@ function AchievementsSection({ onUpdate }: any) {
       </div>
 
       {message && (
-        <div className={`px-4 py-2 rounded text-sm ${message.includes('✅') ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}`}>
+        <div className={`px-4 py-2 rounded text-sm ${message.includes('✅') ? 'bg-green-500/10 text-green-700 dark:text-green-400' : 'bg-red-500/10 text-red-700 dark:text-red-400'}`}>
           {message}
         </div>
       )}
 
       {showForm && (
-        <form ref={formRef} onSubmit={handleSubmit} className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-4">
+        <form ref={formRef} onSubmit={handleSubmit} className="bg-surface border border-border rounded-lg p-6 space-y-4">
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium mb-2 block">Icon</label>
               <select
                 value={formData.icon}
                 onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
               >
                 {iconOptions.map((icon) => (
                   <option key={icon} value={icon}>{icon}</option>
@@ -2048,7 +2058,7 @@ function AchievementsSection({ onUpdate }: any) {
               <select
                 value={formData.gradient}
                 onChange={(e) => setFormData({ ...formData, gradient: e.target.value })}
-                className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
               >
                 {gradientOptions.map((opt) => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -2062,7 +2072,7 @@ function AchievementsSection({ onUpdate }: any) {
             placeholder="Title"
             value={formData.title}
             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
             required
           />
           <input
@@ -2070,7 +2080,7 @@ function AchievementsSection({ onUpdate }: any) {
             placeholder="Subtitle"
             value={formData.subtitle}
             onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
-            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
             required
           />
           <textarea
@@ -2078,7 +2088,7 @@ function AchievementsSection({ onUpdate }: any) {
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             rows={3}
-            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
             required
           />
 
@@ -2091,24 +2101,24 @@ function AchievementsSection({ onUpdate }: any) {
                 value={detailInput}
                 onChange={(e) => setDetailInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddDetail())}
-                className="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                className="flex-1 bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
               />
               <button
                 type="button"
                 onClick={handleAddDetail}
-                className="px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded transition-colors"
+                className="px-3 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded transition-colors"
               >
                 Add
               </button>
             </div>
             <div className="flex flex-wrap gap-2">
               {formData.details.map((detail) => (
-                <span key={detail} className="px-3 py-1 bg-blue-600 rounded text-sm flex items-center gap-2">
+                <span key={detail} className="px-3 py-1 bg-blue-600 text-white rounded text-sm flex items-center gap-2">
                   {detail}
                   <button
                     type="button"
                     onClick={() => handleRemoveDetail(detail)}
-                    className="text-xs hover:text-red-300"
+                    className="text-xs hover:text-red-500"
                   >
                     ✕
                   </button>
@@ -2122,7 +2132,7 @@ function AchievementsSection({ onUpdate }: any) {
             placeholder="Order"
             value={formData.order}
             onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) })}
-            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
           />
 
           <input
@@ -2130,21 +2140,21 @@ function AchievementsSection({ onUpdate }: any) {
             placeholder="Link (e.g., https://example.com)"
             value={formData.link}
             onChange={(e) => setFormData({ ...formData, link: e.target.value })}
-            className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+            className="w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500"
           />
 
           <div className="flex gap-3">
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors disabled:opacity-50"
+              className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition-colors disabled:opacity-50"
             >
               {loading ? 'Saving...' : editingId ? 'Update' : 'Create'}
             </button>
             <button
               type="button"
               onClick={() => setShowForm(false)}
-              className="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg transition-colors"
+              className="px-4 py-2 bg-surface-3 hover:bg-surface-3 rounded-lg transition-colors"
             >
               Cancel
             </button>
@@ -2154,11 +2164,11 @@ function AchievementsSection({ onUpdate }: any) {
 
       <div className="grid gap-4">
         {achievements.map((achievement) => (
-          <div key={achievement._id} className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+          <div key={achievement._id} className="bg-surface border border-border rounded-lg p-4">
             <div className={`h-1 bg-gradient-to-r ${achievement.gradient} rounded mb-3`} />
             <h3 className="text-lg font-bold mb-1">{achievement.title}</h3>
-            <p className="text-gray-400 text-sm mb-2">{achievement.subtitle}</p>
-            <p className="text-gray-400 text-sm mb-3">{achievement.description}</p>
+            <p className="text-muted-foreground text-sm mb-2">{achievement.subtitle}</p>
+            <p className="text-muted-foreground text-sm mb-3">{achievement.description}</p>
             {achievement.details && achievement.details.length > 0 && (
               <div className="mb-3 flex flex-wrap gap-1">
                 {achievement.details.map((detail: string) => (
@@ -2171,18 +2181,205 @@ function AchievementsSection({ onUpdate }: any) {
             <div className="flex gap-2">
               <button
                 onClick={() => handleEdit(achievement)}
-                className="flex items-center gap-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm transition-colors"
+                className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white hover:bg-blue-700 rounded text-sm transition-colors"
               >
                 <Edit2 className="w-4 h-4" />
                 Edit
               </button>
               <button
                 onClick={() => handleDelete(achievement._id)}
-                className="flex items-center gap-1 px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm transition-colors"
+                className="flex items-center gap-1 px-3 py-1 bg-red-600 text-white hover:bg-red-700 rounded text-sm transition-colors"
               >
                 <Trash2 className="w-4 h-4" />
                 Delete
               </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
+// Certifications Section
+const EMPTY_CERTIFICATION = {
+  title: '',
+  issuer: '',
+  platform: '',
+  issueDate: '',
+  credentialId: '',
+  verifyUrl: '',
+  description: '',
+  modules: '',
+  order: 0,
+};
+
+function CertificationsSection() {
+  const formRef = useRef<HTMLFormElement>(null);
+  const [certifications, setCertifications] = useState<any[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formData, setFormData] = useState(EMPTY_CERTIFICATION);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const inputClass = 'w-full bg-surface-2 border border-border-strong rounded px-3 py-2 text-foreground focus:outline-none focus:border-blue-500';
+
+  useEffect(() => {
+    loadCertifications();
+  }, []);
+
+  useEffect(() => {
+    if (showForm) {
+      setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+    }
+  }, [showForm]);
+
+  const loadCertifications = async () => {
+    try {
+      const data = await certificationAPI.getAllCertifications();
+      setCertifications(Array.isArray(data?.data) ? data.data : []);
+    } catch (error) {
+      console.error('Failed to load certifications:', error);
+      setMessage('❌ Failed to load certifications');
+    }
+  };
+
+  const handleAddNew = () => {
+    setEditingId(null);
+    setFormData({ ...EMPTY_CERTIFICATION, order: certifications.length + 1 });
+    setShowForm(true);
+  };
+
+  const handleEdit = (cert: any) => {
+    setEditingId(cert._id);
+    setFormData({
+      title: cert.title || '',
+      issuer: cert.issuer || '',
+      platform: cert.platform || '',
+      issueDate: cert.issueDate || '',
+      credentialId: cert.credentialId || '',
+      verifyUrl: cert.verifyUrl || '',
+      description: cert.description || '',
+      modules: (cert.modules || []).join(', '),
+      order: cert.order || 0,
+    });
+    setShowForm(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage('');
+    const payload = {
+      ...formData,
+      order: Number(formData.order) || 0,
+      modules: formData.modules.split(',').map((m) => m.trim()).filter(Boolean),
+    };
+    try {
+      if (editingId) {
+        await certificationAPI.updateCertification(editingId, payload);
+        setMessage('✅ Certification updated successfully!');
+      } else {
+        await certificationAPI.createCertification(payload);
+        setMessage('✅ Certification created successfully!');
+      }
+      setShowForm(false);
+      setFormData(EMPTY_CERTIFICATION);
+      await loadCertifications();
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error: any) {
+      setMessage(`❌ Error: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this certification?')) return;
+    try {
+      await certificationAPI.deleteCertification(id);
+      setMessage('✅ Certification deleted successfully!');
+      loadCertifications();
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error: any) {
+      setMessage(`❌ Error: ${error.message}`);
+    }
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="space-y-6">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">Certifications</h2>
+        <button
+          onClick={handleAddNew}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors"
+        >
+          <Plus className="w-5 h-5" />
+          Add Certification
+        </button>
+      </div>
+
+      {message && (
+        <div className={`px-4 py-2 rounded text-sm ${message.includes('✅') ? 'bg-green-500/10 text-green-700 dark:text-green-400' : 'bg-red-500/10 text-red-700 dark:text-red-400'}`}>
+          {message}
+        </div>
+      )}
+
+      {showForm && (
+        <form ref={formRef} onSubmit={handleSubmit} className="bg-surface border border-border rounded-lg p-6 space-y-4">
+          <div className="grid md:grid-cols-2 gap-4">
+            <input type="text" placeholder="Title" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} className={inputClass} required />
+            <input type="text" placeholder="Issuer (e.g., Google)" value={formData.issuer} onChange={(e) => setFormData({ ...formData, issuer: e.target.value })} className={inputClass} required />
+            <input type="text" placeholder="Platform (e.g., Coursera)" value={formData.platform} onChange={(e) => setFormData({ ...formData, platform: e.target.value })} className={inputClass} />
+            <input type="date" value={formData.issueDate} onChange={(e) => setFormData({ ...formData, issueDate: e.target.value })} className={inputClass} />
+            <input type="text" placeholder="Credential ID" value={formData.credentialId} onChange={(e) => setFormData({ ...formData, credentialId: e.target.value })} className={inputClass} />
+            <input type="url" placeholder="Verification URL" value={formData.verifyUrl} onChange={(e) => setFormData({ ...formData, verifyUrl: e.target.value })} className={inputClass} />
+          </div>
+          <textarea placeholder="Description" rows={3} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className={inputClass} />
+          <input type="text" placeholder="Modules / skills (comma separated)" value={formData.modules} onChange={(e) => setFormData({ ...formData, modules: e.target.value })} className={inputClass} />
+          <input type="number" placeholder="Order" value={formData.order} onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) || 0 })} className={inputClass} />
+
+          <div className="flex gap-3">
+            <button type="submit" disabled={loading} className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg transition-colors disabled:opacity-50">
+              {loading ? 'Saving...' : editingId ? 'Update' : 'Create'}
+            </button>
+            <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 bg-surface-3 hover:bg-surface-3 rounded-lg transition-colors">
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      <div className="grid md:grid-cols-2 gap-4">
+        {certifications.map((cert) => (
+          <div key={cert._id} className="bg-surface border border-border rounded-lg p-4">
+            <p className="text-xs text-muted-foreground mb-1">
+              {[cert.issuer, cert.platform, cert.issueDate].filter(Boolean).join(' · ')}
+            </p>
+            <h3 className="text-lg font-bold mb-2">{cert.title}</h3>
+            {cert.description && <p className="text-muted-foreground text-sm mb-3">{cert.description}</p>}
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => handleEdit(cert)}
+                className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white hover:bg-blue-700 rounded text-sm transition-colors"
+              >
+                <Edit2 className="w-4 h-4" />
+                Edit
+              </button>
+              <button
+                onClick={() => handleDelete(cert._id)}
+                className="flex items-center gap-1 px-3 py-1 bg-red-600 text-white hover:bg-red-700 rounded text-sm transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete
+              </button>
+              {cert.verifyUrl && (
+                <a href={cert.verifyUrl} target="_blank" rel="noopener noreferrer" className="ml-auto flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline">
+                  Verify
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              )}
             </div>
           </div>
         ))}
