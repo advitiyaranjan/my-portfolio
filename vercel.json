@@ -1,7 +1,6 @@
 {
   "version": 2,
   "buildCommand": "npm --prefix Client run build",
-  "public": true,
   "outputDirectory": "Client/dist",
   "installCommand": "npm install --legacy-peer-deps && npm install --include=dev --prefix Client",
   "functions": {
