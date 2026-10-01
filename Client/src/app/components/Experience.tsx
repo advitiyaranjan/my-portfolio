@@ -4,6 +4,7 @@ import { useApiList } from './hooks/useApiList';
 import { SectionHeading } from './SectionHeading';
 import { Reveal } from './Reveal';
 import { accentFor } from './Projects';
+import { externalUrl } from '../lib/url';
 
 interface ExperienceItem {
   _id?: string;
@@ -132,7 +133,7 @@ export function Experience() {
                           ))}
                           {exp.credentialUrl && (
                             <a
-                              href={exp.credentialUrl}
+                              href={externalUrl(exp.credentialUrl)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="ml-auto inline-flex items-center gap-1 text-sm font-medium text-neon-violet hover:underline underline-offset-4"

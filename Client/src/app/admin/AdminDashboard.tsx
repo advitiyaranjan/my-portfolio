@@ -9,6 +9,7 @@ import {
 } from '@/utils/api';
 import { ThemeToggle } from '../components/Navbar';
 import { accentFor } from '../components/Projects';
+import { externalUrl } from '../lib/url';
 
 /* ------------------------------------------------------------------ */
 /* Shared UI                                                           */
@@ -435,7 +436,7 @@ const fmtMonth = (d?: string | null) => {
 
 const LinkOut = ({ href, label }: { href?: string; label: string }) =>
   href ? (
-    <a href={href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs font-medium text-neon-violet hover:underline">
+    <a href={externalUrl(href)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs font-medium text-neon-violet hover:underline">
       {label} <ArrowUpRight className="w-3 h-3" />
     </a>
   ) : null;

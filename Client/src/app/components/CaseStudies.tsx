@@ -3,6 +3,7 @@ import { useInView } from './hooks/useInView';
 import { ExternalLink, BarChart3, Lightbulb, CheckCircle, TrendingUp } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { caseStudyAPI } from '@/utils/api';
+import { externalUrl } from '../lib/url';
 
 export function CaseStudies() {
   const [ref, isInView] = useInView({ threshold: 0.1 });
@@ -183,7 +184,7 @@ export function CaseStudies() {
 
                     {study.link && (
                       <motion.a
-                        href={study.link}
+                        href={externalUrl(study.link)}
                         target="_blank"
                         rel="noopener noreferrer"
                         whileHover={{ scale: 1.05 }}

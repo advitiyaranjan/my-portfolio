@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { portfolioAPI } from '@/utils/api';
 import { usePortfolio } from './hooks/usePortfolio';
 import { ScrambleText } from './ScrambleText';
+import { externalUrl } from '../lib/url';
 
 const PORTFOLIO_VIEW_SESSION_KEY = 'portfolioViewTracked';
 
@@ -97,7 +98,7 @@ export function Hero() {
                 <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </button>
               {portfolio.resumeLink && (
-                <a href={portfolio.resumeLink} target="_blank" rel="noopener noreferrer" className="btn btn-outline" data-magnetic>
+                <a href={externalUrl(portfolio.resumeLink)} target="_blank" rel="noopener noreferrer" className="btn btn-outline" data-magnetic>
                   <FileText className="w-4 h-4" />
                   Resume
                 </a>
