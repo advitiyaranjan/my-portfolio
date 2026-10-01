@@ -212,6 +212,36 @@ const skillCategories = [
 
 const projects = [
   {
+    title: 'AI-Powered Finance Tracker',
+    description: 'Intelligent expense tracker with a React frontend and a Flask REST API for real-time transaction logging and categorisation.',
+    highlights: [
+      'PyTorch + scikit-learn model analyses spending patterns and generates personalised budget recommendations with 85%+ prediction accuracy',
+      'Interactive Chart.js dashboards for monthly trends, category breakdowns and AI-generated savings insights',
+    ],
+    techStack: ['React', 'Python', 'Flask', 'PyTorch', 'Scikit-learn', 'Chart.js'],
+    imageUrl: 'https://images.unsplash.com/photo-1533750349088-75e1b6b6a45f?w=500&h=300&fit=crop',
+    githubLink: 'https://github.com/advitiyaranjan/ai-finance-tracker',
+    liveLink: '',
+    gradient: 'from-yellow-500 to-orange-500',
+    color: 'yellow',
+    order: 1,
+  },
+  {
+    title: 'SyncAdda: Watch Together',
+    description: 'Account-free watch party app: create a private room, share a six-character code and watch, listen and video-call together in perfect sync.',
+    highlights: [
+      'Server-authoritative play, pause, seek and speed with clock-offset estimation, drift correction and late-join sync over Socket.IO',
+      'Peer-to-peer local file streaming plus WebRTC voice/video, real-time chat, reactions and host controls for up to eight people',
+    ],
+    techStack: ['React', 'TypeScript', 'Node.js', 'Express', 'Socket.IO', 'WebRTC', 'Redis'],
+    imageUrl: 'https://images.unsplash.com/photo-1522869635100-9f4c5e86aa37?w=500&h=300&fit=crop',
+    githubLink: 'https://github.com/advitiyaranjan/SyncAdda',
+    liveLink: 'https://adda.advitiyaranjan.in',
+    gradient: 'from-purple-500 to-pink-500',
+    color: 'purple',
+    order: 2,
+  },
+  {
     title: 'ViswaKart: E-commerce Platform',
     description: 'Full-stack e-commerce platform with Clerk authentication, a dynamic product catalogue, cart management and secure Stripe payments.',
     highlights: [
@@ -224,7 +254,22 @@ const projects = [
     liveLink: 'https://ecom.advitiyaranjan.in',
     gradient: 'from-blue-500 to-cyan-500',
     color: 'blue',
-    order: 1,
+    order: 3,
+  },
+  {
+    title: 'FilesBhejo: Peer-to-Peer File Sharing',
+    description: 'Send files between devices with a 6-digit code or a QR scan. No sign-up, and files never touch a server.',
+    highlights: [
+      'Direct browser-to-browser transfers over WebRTC at 25–30 MB/s, with PeerJS used only for signalling',
+      'End-to-end encrypted with ECDH P-256 key agreement and AES-256-GCM, plus QR-link secrets and safety codes against interception',
+    ],
+    techStack: ['JavaScript', 'WebRTC', 'PeerJS', 'Web Crypto API', 'Vercel'],
+    imageUrl: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=500&h=300&fit=crop',
+    githubLink: 'https://github.com/advitiyaranjan/FilesBhejo',
+    liveLink: '',
+    gradient: 'from-teal-500 to-blue-500',
+    color: 'teal',
+    order: 4,
   },
   {
     title: 'Personal Portfolio',
@@ -239,22 +284,7 @@ const projects = [
     liveLink: 'https://advitiyaranjan.in',
     gradient: 'from-indigo-500 to-blue-500',
     color: 'indigo',
-    order: 2,
-  },
-  {
-    title: 'AI-Powered Finance Tracker',
-    description: 'Intelligent expense tracker with a React frontend and a Flask REST API for real-time transaction logging and categorisation.',
-    highlights: [
-      'PyTorch + scikit-learn model analyses spending patterns and generates personalised budget recommendations with 85%+ prediction accuracy',
-      'Interactive Chart.js dashboards for monthly trends, category breakdowns and AI-generated savings insights',
-    ],
-    techStack: ['React', 'Python', 'Flask', 'PyTorch', 'Scikit-learn', 'Chart.js'],
-    imageUrl: 'https://images.unsplash.com/photo-1533750349088-75e1b6b6a45f?w=500&h=300&fit=crop',
-    githubLink: 'https://github.com/advitiyaranjan/ai-finance-tracker',
-    liveLink: '',
-    gradient: 'from-yellow-500 to-orange-500',
-    color: 'yellow',
-    order: 3,
+    order: 5,
   },
   {
     title: 'Predictive Pareto Dispatcher',
@@ -269,7 +299,7 @@ const projects = [
     liveLink: '',
     gradient: 'from-green-500 to-emerald-500',
     color: 'green',
-    order: 4,
+    order: 6,
   },
 ];
 
@@ -486,10 +516,43 @@ async function applyContentUpdate() {
     ...portfolioContent,
     socialLinks: { ...(portfolio.socialLinks || {}), ...portfolioContent.socialLinks },
     contentVersion: CONTENT_VERSION,
+    projectsVersion: PROJECTS_VERSION,
     lastUpdated: new Date().toISOString(),
   });
 
   console.log(`✅ Content refreshed to ${CONTENT_VERSION}`);
+  return true;
+}
+
+// One-time project refresh: add new projects and apply the curated order, keeping admin edits to existing ones.
+const PROJECTS_VERSION = '2026-10-syncadda-filesbhejo';
+
+async function applyProjectsUpdate() {
+  const [portfolio] = await portFolioStorage.findAll();
+  if (!portfolio || portfolio.projectsVersion === PROJECTS_VERSION) {
+    return false;
+  }
+
+  const existing = await projectsStorage.findAll();
+  const key = (title) => String(title || '').split(':')[0].trim().toLowerCase();
+  const byKey = new Map(existing.map((project) => [key(project.title), project]));
+  const now = new Date().toISOString();
+
+  const curated = projects.map((project) => {
+    const current = byKey.get(key(project.title));
+    if (current) {
+      byKey.delete(key(project.title));
+      return { ...current, order: project.order };
+    }
+    return { _id: projectsStorage.generateId(), ...project, createdAt: now, updatedAt: now };
+  });
+  const others = [...byKey.values()]
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    .map((project, i) => ({ ...project, order: curated.length + i + 1 }));
+
+  await projectsStorage.write([...curated, ...others]);
+  await portFolioStorage.updateById(portfolio._id, { projectsVersion: PROJECTS_VERSION });
+  console.log(`✅ Projects refreshed to ${PROJECTS_VERSION}`);
   return true;
 }
 
@@ -522,6 +585,7 @@ async function seedData() {
       profileImage: '/images/profile.jpg',
       viewCount: 0,
       contentVersion: CONTENT_VERSION,
+      projectsVersion: PROJECTS_VERSION,
     });
     console.log('✅ Portfolio data created');
   }
@@ -532,6 +596,7 @@ async function seedData() {
   await seedCollectionIfEmpty(achievementsStorage, achievements, 'Achievements');
   await seedCollectionIfEmpty(certificationsStorage, certifications, 'Certifications');
   await applyContentUpdate();
+  await applyProjectsUpdate();
 
   // Seed case studies
   const caseStudies = [
