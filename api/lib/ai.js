@@ -5,11 +5,24 @@ import {
 // Gemini-powered content assistant: turns a plain-English request into a list of
 // create/update/delete operations, which the admin previews before they are applied.
 
-const GEMINI_MODEL = process.env.GEMINI_MODEL?.trim() || 'gemini-2.5-flash';
+// Tried newest first; a model that is missing, overloaded or rate-limited falls through to the next.
+// Override with GEMINI_MODEL (a single id or a comma-separated list).
+const DEFAULT_MODELS = [
+  'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash',
+  'gemini-3.4-flash', 'gemini-3.3-flash', 'gemini-3.2-flash', 'gemini-3.1-flash', 'gemini-3.1-pro-preview',
+];
+const GEMINI_MODELS = process.env.GEMINI_MODEL?.split(',').map((m) => m.trim()).filter(Boolean) || DEFAULT_MODELS;
 const GEMINI_URL = (model) => `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+// Stay under the 60s function limit, leaving room to apply the plan and respond.
+const TIME_BUDGET_MS = 50_000;
+
+// Models the API reported as nonexistent; warm instances skip them. Overloads and rate limits are
+// transient, so those models are still tried first on the next request.
+const missingModels = new Set();
+let lastModel = null;
 
 export const isAiEnabled = () => Boolean(process.env.GEMINI_API_KEY?.trim());
-export const aiModel = () => GEMINI_MODEL;
+export const aiModel = () => lastModel || GEMINI_MODELS.find((m) => !missingModels.has(m)) || GEMINI_MODELS[0];
 
 // Collections the assistant may touch. Messages and users are deliberately excluded.
 const COLLECTIONS = {
@@ -106,34 +119,69 @@ Respond with JSON only, in exactly this shape:
 {"summary": "one or two sentences describing the changes", "operations": [{"action": "create" | "update" | "delete", "collection": "${Object.keys(COLLECTIONS).join('" | "')}", "id": "existing _id for update/delete", "data": { }, "reason": "short explanation" }]}`;
 }
 
-async function callGemini(prompt) {
-  const res = await fetch(GEMINI_URL(GEMINI_MODEL), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY.trim() },
-    body: JSON.stringify({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: { responseMimeType: 'application/json', temperature: 0.2 },
-    }),
-  });
+const geminiError = (message, status, retryable) => Object.assign(new Error(message), { status, retryable });
+
+async function callModel(model, prompt, timeoutMs) {
+  let res;
+  try {
+    res = await fetch(GEMINI_URL(model), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY.trim() },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: { responseMimeType: 'application/json' },
+      }),
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+  } catch (error) {
+    throw geminiError(error.name === 'TimeoutError' ? 'timed out' : error.message, 504, true);
+  }
 
   const body = await res.json().catch(() => null);
   if (!res.ok) {
-    const message = body?.error?.message || `Gemini request failed (${res.status})`;
-    throw Object.assign(new Error(message), { status: res.status === 429 ? 429 : 502 });
+    const message = body?.error?.message || `request failed (${res.status})`;
+    // A bad key fails identically on every model, so stop there; anything else may work on the next model.
+    const retryable = ![401, 403].includes(res.status) && !/api key/i.test(message);
+    throw Object.assign(geminiError(message, res.status === 429 ? 429 : 502, retryable), { missing: res.status === 404 });
   }
 
   const text = body?.candidates?.[0]?.content?.parts?.map((p) => p.text || '').join('') || '';
   if (!text) {
     const reason = body?.promptFeedback?.blockReason || body?.candidates?.[0]?.finishReason || 'empty response';
-    throw Object.assign(new Error(`Gemini returned no content (${reason})`), { status: 502 });
+    throw geminiError(`returned no content (${reason})`, 502, true);
   }
 
   try {
     // Tolerate a stray ```json fence even though JSON mode is requested.
     return JSON.parse(text.replace(/^```(?:json)?\s*|\s*```$/g, ''));
   } catch {
-    throw Object.assign(new Error('Gemini returned malformed JSON. Try rephrasing the request.'), { status: 502 });
+    throw geminiError('returned malformed JSON', 502, true);
   }
+}
+
+async function callGemini(prompt) {
+  const deadline = Date.now() + TIME_BUDGET_MS;
+  const available = GEMINI_MODELS.filter((m) => !missingModels.has(m));
+  const models = available.length ? available : GEMINI_MODELS;
+  const failures = [];
+
+  for (const model of models) {
+    const remaining = deadline - Date.now();
+    if (remaining < 3000) break;
+    try {
+      const result = await callModel(model, prompt, remaining);
+      lastModel = model;
+      return { result, model };
+    } catch (error) {
+      console.warn(`Gemini ${model} failed: ${error.message}`);
+      failures.push(`${model}: ${error.message}`);
+      if (error.missing) missingModels.add(model);
+      if (!error.retryable) throw geminiError(`Gemini ${error.message}`, error.status, false);
+    }
+  }
+
+  const last = failures[failures.length - 1] || 'no models tried';
+  throw geminiError(`No Gemini model could handle the request (last: ${last})`, 502, false);
 }
 
 // Coerce values into the shapes the site expects, whatever form the model (or client) sent.
@@ -222,9 +270,9 @@ export async function planChanges(instruction, history) {
   if (!isAiEnabled()) throw Object.assign(new Error('Gemini is not configured. Set GEMINI_API_KEY on the server.'), { status: 503 });
 
   const content = await loadContent();
-  const result = await callGemini(buildPrompt(content, instruction, history));
+  const { result, model } = await callGemini(buildPrompt(content, instruction, history));
   const { operations, rejected } = validateOperations(result?.operations, content);
-  return { summary: String(result?.summary || ''), operations, rejected };
+  return { summary: String(result?.summary || ''), operations, rejected, model };
 }
 
 export async function applyChanges(rawOps) {
