@@ -2,6 +2,7 @@ import 'dotenv/config.js';
 import { usersStorage, skillsStorage, projectsStorage, experiencesStorage, achievementsStorage, contactStorage, portFolioStorage, caseStudiesStorage, certificationsStorage } from './lib/storage.js';
 import { extractToken, verifyToken, hashPassword, comparePassword, generateToken, validateEmail } from './lib/auth.js';
 import seedData from './seed.js';
+import { isAiEnabled, aiModel, planChanges, applyChanges } from './lib/ai.js';
 
 const bootstrapDataPromise = seedData().catch((error) => {
   console.error('❌ Failed to seed initial data:', error);
@@ -639,6 +640,42 @@ export async function handleCertifications(req, res, pathname) {
   return res.status(405).json({ success: false, message: 'Method not allowed' });
 }
 
+// AI assistant API (Gemini) — admin only
+export async function handleAi(req, res, pathname) {
+  setCorsHeaders(res);
+  const user = requireAuth(req);
+  if (!user) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+  if (pathname === '/api/ai/status' && req.method === 'GET') {
+    return res.status(200).json({ success: true, data: { enabled: isAiEnabled(), model: aiModel() } });
+  }
+
+  try {
+    if (pathname === '/api/ai/plan' && req.method === 'POST') {
+      const instruction = String(req.body?.instruction || '').trim();
+      if (!instruction) return res.status(400).json({ success: false, message: 'Tell the assistant what to change' });
+      if (instruction.length > 4000) return res.status(400).json({ success: false, message: 'Request is too long (max 4000 characters)' });
+      const history = Array.isArray(req.body?.history) ? req.body.history : [];
+      const plan = await planChanges(instruction, history);
+      return res.status(200).json({ success: true, data: plan });
+    }
+
+    if (pathname === '/api/ai/apply' && req.method === 'POST') {
+      const operations = req.body?.operations;
+      if (!Array.isArray(operations) || operations.length === 0) {
+        return res.status(400).json({ success: false, message: 'No changes to apply' });
+      }
+      const result = await applyChanges(operations);
+      return res.status(200).json({ success: true, message: `Applied ${result.applied.length} change(s)`, data: result });
+    }
+  } catch (error) {
+    console.error('AI assistant error:', error);
+    return res.status(error.status || 500).json({ success: false, message: error.message || 'AI request failed' });
+  }
+
+  return res.status(405).json({ success: false, message: 'Method not allowed' });
+}
+
 export default async function handler(req, res) {
   await bootstrapDataPromise;
 
@@ -661,6 +698,7 @@ export default async function handler(req, res) {
   if (pathname.startsWith('/api/contact')) return handleContact(req, res, pathname);
   if (pathname.startsWith('/api/case-studies')) return handleCaseStudies(req, res, pathname);
   if (pathname.startsWith('/api/certifications')) return handleCertifications(req, res, pathname);
+  if (pathname.startsWith('/api/ai/')) return handleAi(req, res, pathname);
 
   return res.status(404).json({ success: false, message: 'Endpoint not found' });
 }

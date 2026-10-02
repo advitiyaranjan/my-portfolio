@@ -426,6 +426,42 @@ export const portfolioAPI = {
 };
 
 // ============================================
+// AI ASSISTANT API (Gemini)
+// ============================================
+
+export type AiAction = 'create' | 'update' | 'delete';
+export type AiCollection = 'projects' | 'experience' | 'achievements' | 'certifications' | 'skills' | 'portfolio';
+
+export interface AiOperation {
+  action: AiAction;
+  collection: AiCollection;
+  id?: string;
+  data?: { [key: string]: unknown };
+  reason?: string;
+  before?: { [key: string]: unknown };
+}
+
+export interface AiPlan {
+  summary: string;
+  operations: AiOperation[];
+  rejected: string[];
+}
+
+export const aiAPI = {
+  getStatus: () =>
+    apiRequest('/ai/status', 'GET') as Promise<{ data: { enabled: boolean; model: string } }>,
+
+  plan: (instruction: string, history: { instruction: string; summary: string }[] = []) =>
+    apiRequest('/ai/plan', 'POST', { instruction, history }) as Promise<{ data: AiPlan }>,
+
+  apply: (operations: AiOperation[]) =>
+    apiRequest('/ai/apply', 'POST', { operations }) as Promise<{
+      message: string;
+      data: { applied: { action: AiAction; collection: AiCollection; record?: any; id?: string }[]; rejected: string[] };
+    }>,
+};
+
+// ============================================
 // EXPORT ALL APIs
 // ============================================
 
@@ -440,4 +476,5 @@ export default {
   messagesAPI,
   resumeAPI,
   portfolioAPI,
+  aiAPI,
 };
