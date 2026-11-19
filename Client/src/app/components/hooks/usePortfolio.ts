@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import { portfolioAPI } from '@/utils/api';
+import siteContent from '../../../data/site-content.json';
 
 export interface Portfolio {
   fullName: string;
@@ -25,7 +24,7 @@ export interface Portfolio {
   aboutHighlights?: { icon: string; title: string; description: string }[];
 }
 
-// Shown immediately and used if the API is unreachable, so the page never renders blank.
+// The profile is a public build-time snapshot; admin content changes publish with the next build.
 export const DEFAULT_PORTFOLIO: Portfolio = {
   fullName: 'Advitiya Ranjan',
   title: 'Full Stack Developer & AI/ML Engineer',
@@ -56,21 +55,6 @@ export const DEFAULT_PORTFOLIO: Portfolio = {
   ],
 };
 
-let portfolioRequest: Promise<Partial<Portfolio>> | null = null;
-
-function fetchPortfolio() {
-  if (!portfolioRequest) {
-    portfolioRequest = portfolioAPI
-      .getPortfolio()
-      .then((response: any) => (response?.data ?? response ?? {}) as Partial<Portfolio>)
-      .catch((error: unknown) => {
-        portfolioRequest = null; // allow a retry on the next mount
-        throw error;
-      });
-  }
-  return portfolioRequest;
-}
-
 const pick = <T,>(value: T | '' | null | undefined, fallback: T): T =>
   value === undefined || value === null || value === '' ? fallback : value;
 
@@ -91,21 +75,7 @@ function withDefaults(data: Partial<Portfolio>): Portfolio {
   };
 }
 
-/** Portfolio profile shared by every section; fetched once per page load. */
+/** Portfolio profile shared by every section and rendered into the initial HTML. */
 export function usePortfolio() {
-  const [data, setData] = useState<Partial<Portfolio>>({});
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-    fetchPortfolio()
-      .then((result) => active && setData(result))
-      .catch(() => {})
-      .finally(() => active && setLoading(false));
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  return { portfolio: withDefaults(data), loading };
+  return { portfolio: withDefaults(siteContent.portfolio as Partial<Portfolio>), loading: false };
 }

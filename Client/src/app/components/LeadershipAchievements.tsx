@@ -1,6 +1,6 @@
 import { Award, Target, Users, Zap, Code2, Megaphone, ArrowUpRight } from 'lucide-react';
-import { achievementAPI } from '../../utils/api';
 import { useApiList } from './hooks/useApiList';
+import siteContent from '../../data/site-content.json';
 import { SectionHeading } from './SectionHeading';
 import { Reveal } from './Reveal';
 import { accentFor } from './Projects';
@@ -27,7 +27,7 @@ const iconMap: Record<string, typeof Award> = {
 };
 
 export function LeadershipAchievements() {
-  const { items: achievements, loading } = useApiList<Achievement>(achievementAPI.getAllAchievements);
+  const { items: achievements, loading } = useApiList<Achievement>(siteContent.achievements);
 
   return (
     <section id="achievements" className="relative py-24 sm:py-28">

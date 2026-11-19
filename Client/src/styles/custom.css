@@ -7,8 +7,8 @@ body { overflow-y: scroll; }
 ::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 999px; border: 2px solid var(--background); }
 
 @layer components {
-  .text-gradient { color: var(--primary); }
-  .hud-label { font-family: var(--font-mono); font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; color: var(--primary); }
+  .text-gradient { color: var(--neon-violet); }
+  .hud-label { font-family: var(--font-mono); font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; color: var(--neon-cyan); }
   .panel { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 1rem; box-shadow: var(--shadow-card); }
   .panel-interactive { transition: border-color .2s ease, transform .2s ease, box-shadow .2s ease; }
   .panel-interactive:hover { border-color: var(--primary); transform: translateY(-3px); box-shadow: var(--shadow-card); }

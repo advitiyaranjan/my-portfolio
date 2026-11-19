@@ -10,7 +10,7 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue>({ theme: 'light', toggleTheme: () => {} });
 
-const THEME_COLORS: Record<Theme, string> = { light: '#f4f6fb', dark: '#05070f' };
+const THEME_COLORS: Record<Theme, string> = { light: '#f5f7fa', dark: '#0b0f14' };
 
 function readStoredTheme(): Theme | null {
   try {
@@ -30,12 +30,13 @@ function applyTheme(theme: Theme) {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(() =>
-    document.documentElement.classList.contains('dark') ? 'dark' : 'light'
-  );
+  // Keep the server and first hydrated render deterministic; sync the prepainted DOM in an effect.
+  const [theme, setTheme] = useState<Theme>('light');
 
   // Follow the OS setting until the visitor picks a theme themselves.
   useEffect(() => {
+    const initial: Theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+    setTheme(initial);
     const media = window.matchMedia('(prefers-color-scheme: dark)');
     const onChange = (e: MediaQueryListEvent) => {
       if (readStoredTheme()) return;

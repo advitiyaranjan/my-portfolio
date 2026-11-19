@@ -1,4 +1,3 @@
-import { motion } from 'motion/react';
 import { ArrowRight, ArrowDown, FileText, Github, Linkedin, Mail, Code2, Twitter } from 'lucide-react';
 import { useEffect } from 'react';
 import { portfolioAPI } from '@/utils/api';
@@ -8,16 +7,11 @@ import { externalUrl } from '../lib/url';
 
 const PORTFOLIO_VIEW_SESSION_KEY = 'portfolioViewTracked';
 
-const fadeUp = (delay: number) => ({
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.55, delay, ease: 'easeOut' as const },
-});
-
 export function Hero() {
   const { portfolio } = usePortfolio();
 
   useEffect(() => {
+    if (!['advitiyaranjan.in', 'www.advitiyaranjan.in'].includes(window.location.hostname)) return;
     try {
       if (sessionStorage.getItem(PORTFOLIO_VIEW_SESSION_KEY)) return;
     } catch {
@@ -58,41 +52,38 @@ export function Hero() {
         <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-14 lg:gap-10 items-center">
           {/* Copy */}
           <div className="text-center lg:text-left">
-            <motion.div
-              {...fadeUp(0.05)}
+            <div
               className="inline-flex items-center gap-2.5 rounded-full border border-border bg-surface/70 px-3.5 py-1.5 mb-7"
             >
               <span className="pulse-dot w-2 h-2 rounded-full bg-emerald-500" />
               <span className="font-mono text-[11px] tracking-[0.14em] uppercase text-muted-foreground">
                 Open to opportunities
               </span>
-            </motion.div>
+            </div>
 
-            <motion.p {...fadeUp(0.12)} className="font-mono text-sm text-neon-cyan mb-3">
+            <p className="font-mono text-sm text-neon-cyan mb-3">
               &gt; hello_world, I'm
-            </motion.p>
+            </p>
 
-            <motion.h1
-              {...fadeUp(0.18)}
+            <h1
               className="font-display text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05] text-foreground"
             >
               {firstNames}{' '}
               {lastName && <ScrambleText text={lastName} className="text-gradient" trigger="mount" delay={450} replayOnHover />}
-            </motion.h1>
+            </h1>
 
-            <motion.p {...fadeUp(0.26)} className="mt-5 font-display text-xl sm:text-2xl font-medium text-foreground/85">
+            <p className="mt-5 font-display text-xl sm:text-2xl font-medium text-foreground/85">
               {portfolio.title}
               <span className="inline-block w-[2px] h-[1.1em] ml-1 align-[-0.15em] bg-neon-cyan animate-pulse" aria-hidden="true" />
-            </motion.p>
+            </p>
 
-            <motion.p
-              {...fadeUp(0.34)}
+            <p
               className="mt-5 text-base sm:text-lg leading-relaxed text-muted-foreground max-w-xl mx-auto lg:mx-0"
             >
               {portfolio.bio}
-            </motion.p>
+            </p>
 
-            <motion.div {...fadeUp(0.42)} className="mt-9 flex flex-wrap gap-3 justify-center lg:justify-start">
+            <div className="mt-9 flex flex-wrap gap-3 justify-center lg:justify-start">
               <button type="button" onClick={() => scrollTo('projects')} className="btn btn-primary group" data-magnetic>
                 View projects
                 <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
@@ -106,9 +97,9 @@ export function Hero() {
               <button type="button" onClick={() => scrollTo('contact')} className="btn btn-ghost">
                 Contact me
               </button>
-            </motion.div>
+            </div>
 
-            <motion.div {...fadeUp(0.5)} className="mt-9 flex gap-2.5 justify-center lg:justify-start">
+            <div className="mt-9 flex gap-2.5 justify-center lg:justify-start">
               {socials.map(({ Icon, href, label }) => (
                 <a
                   key={label}
@@ -123,14 +114,11 @@ export function Hero() {
                   <Icon className="w-[18px] h-[18px]" />
                 </a>
               ))}
-            </motion.div>
+            </div>
           </div>
 
           {/* Portrait */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.94 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.7, delay: 0.15, ease: 'easeOut' }}
+          <div
             className="flex flex-col items-center"
           >
             <div className="relative w-64 sm:w-80 lg:w-[22rem] aspect-square">
@@ -143,6 +131,7 @@ export function Hero() {
                 alt={portfolio.fullName}
                 width={352}
                 height={352}
+                fetchpriority="high"
                 className="absolute inset-[10px] w-[calc(100%-20px)] h-[calc(100%-20px)] rounded-full object-cover object-top"
               />
 
@@ -169,7 +158,7 @@ export function Hero() {
                 </div>
               ))}
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
 

@@ -1,6 +1,6 @@
 import { ArrowUpRight, Github } from 'lucide-react';
-import { projectAPI } from '@/utils/api';
 import { useApiList } from './hooks/useApiList';
+import siteContent from '../../data/site-content.json';
 import { SectionHeading } from './SectionHeading';
 import { Reveal } from './Reveal';
 import { externalUrl } from '../lib/url';
@@ -11,22 +11,12 @@ interface Project {
   description: string;
   highlights?: string[];
   techStack?: string[];
+  imageUrl?: string;
+  imageAlt?: string;
   githubLink?: string;
   liveLink?: string;
   gradient?: string;
 }
-
-// Accent colours for the gradient keys stored with each project.
-export const ACCENTS: Record<string, [string, string]> = {
-  'from-blue-500 to-cyan-500': ['#0ea5e9', '#06b6d4'],
-  'from-purple-500 to-pink-500': ['#a855f7', '#ec4899'],
-  'from-green-500 to-emerald-500': ['#22c55e', '#10b981'],
-  'from-yellow-500 to-orange-500': ['#eab308', '#f97316'],
-  'from-red-500 to-rose-500': ['#ef4444', '#f43f5e'],
-  'from-indigo-500 to-blue-500': ['#6366f1', '#3b82f6'],
-  'from-orange-500 to-red-500': ['#f97316', '#ef4444'],
-  'from-teal-500 to-blue-500': ['#14b8a6', '#3b82f6'],
-};
 
 export const accentFor = (_gradient?: string) => ['#155eef', '#155eef'];
 
@@ -34,7 +24,7 @@ export const accentFor = (_gradient?: string) => ['#155eef', '#155eef'];
 const isRealLink = (url?: string) => Boolean(url && !url.includes('example.com') && url !== '#');
 
 export function Projects() {
-  const { items: projects, loading } = useApiList<Project>(projectAPI.getAllProjects);
+  const { items: projects, loading } = useApiList<Project>(siteContent.projects);
 
   return (
     <section id="projects" className="relative py-24 sm:py-28">
@@ -58,7 +48,6 @@ export function Projects() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {projects.map((project, index) => {
-              const [from] = accentFor(project.gradient);
               const live = isRealLink(project.liveLink) ? externalUrl(project.liveLink) : undefined;
               const github = isRealLink(project.githubLink) ? externalUrl(project.githubLink) : undefined;
               const tech = project.techStack || [];
@@ -67,6 +56,17 @@ export function Projects() {
                 <Reveal key={project._id || project.title} delay={(index % 2) * 0.08} className="h-full">
                   <article className="panel panel-interactive group h-full flex flex-col overflow-hidden">
                     <div className="h-[3px] w-full bg-primary" />
+                    {project.imageUrl && (
+                      <img
+                        src={project.imageUrl}
+                        alt={project.imageAlt || `Illustrative visual for ${project.title}`}
+                        width={500}
+                        height={300}
+                        loading="lazy"
+                        decoding="async"
+                        className="h-48 w-full border-b border-border object-cover"
+                      />
+                    )}
 
                     <div className="relative flex flex-col flex-1 p-6 sm:p-7">
                       <div className="flex items-start justify-between gap-4">
@@ -85,16 +85,15 @@ export function Projects() {
                       </div>
 
                       <h3 className="mt-3 font-display text-2xl font-semibold tracking-tight text-foreground">{project.title}</h3>
-                      <p className="mt-3 text-sm sm:text-[0.95rem] leading-relaxed text-muted-foreground">{project.description}</p>
+                      <p className="mt-3 font-mono text-[10px] uppercase tracking-wider text-neon-cyan">Problem</p>
+                      <p className="mt-1 text-sm leading-relaxed text-foreground/80">{project.description}</p>
+                      <p className="mt-3 text-xs font-mono uppercase tracking-wider text-muted-foreground"><span className="text-neon-cyan">Role</span> · Project creator and developer</p>
 
                       {project.highlights && project.highlights.length > 0 && (
                         <ul className="mt-4 space-y-2">
                           {project.highlights.map((point) => (
                             <li key={point} className="flex gap-2.5 text-sm leading-relaxed text-muted-foreground">
-                              <span
-                                className="mt-2 w-1.5 h-1.5 shrink-0 rounded-full"
-                                style={{ backgroundColor: from }}
-                              />
+                              <span className="mt-2 w-1.5 h-1.5 shrink-0 rounded-full bg-primary" />
                               <span>{point}</span>
                             </li>
                           ))}

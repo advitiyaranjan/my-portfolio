@@ -1,0 +1,622 @@
+{
+  "certifications": [
+    {
+      "title": "Google AI Professional Certificate",
+      "issuer": "Google",
+      "platform": "Coursera",
+      "issueDate": "2026-08-21",
+      "credentialId": "O3NWLOUN6T5V",
+      "verifyUrl": "https://coursera.org/verify/professional-cert/O3NWLOUN6T5V",
+      "description": "Seven-course program on applying AI to brainstorming, research, writing, content creation, data analysis and app building, with a portfolio of 20+ AI-built artifacts.",
+      "modules": [
+        "AI Fundamentals",
+        "AI for Research & Insights",
+        "AI for Data Analysis",
+        "AI for App Building"
+      ],
+      "order": 1
+    },
+    {
+      "title": "PyTorch for Deep Learning Professional Certificate",
+      "issuer": "DeepLearning.AI",
+      "platform": "Coursera",
+      "issueDate": "2026-08-30",
+      "credentialId": "E8T0O3OA2FV4",
+      "verifyUrl": "https://coursera.org/verify/professional-cert/E8T0O3OA2FV4",
+      "description": "Three-course program from PyTorch fundamentals to advanced architectures and deployment, tackling computer vision and NLP with TorchVision and Hugging Face models.",
+      "modules": [
+        "PyTorch Fundamentals",
+        "Techniques & Ecosystem Tools",
+        "Advanced Architectures & Deployment"
+      ],
+      "order": 2
+    },
+    {
+      "title": "Google Project Management Professional Certificate",
+      "issuer": "Google",
+      "platform": "Coursera",
+      "issueDate": "2026-08-24",
+      "credentialId": "GM3C7IYE8SNL",
+      "verifyUrl": "https://coursera.org/verify/professional-cert/GM3C7IYE8SNL",
+      "description": "Seven-course program covering the full project lifecycle: initiating, planning and running traditional and Agile projects, risk management and stakeholder communication.",
+      "modules": [
+        "Project Initiation",
+        "Project Planning",
+        "Agile Project Management",
+        "Capstone"
+      ],
+      "order": 3
+    },
+    {
+      "title": "Programming in Python",
+      "issuer": "Meta",
+      "platform": "Coursera",
+      "issueDate": "2026-08-28",
+      "credentialId": "QQX1FFPDQTXM",
+      "verifyUrl": "https://coursera.org/verify/QQX1FFPDQTXM",
+      "description": "Core Python programming: object-oriented and functional paradigms, data structures, algorithms, file I/O and scripting best practices.",
+      "modules": [
+        "OOP",
+        "Data Structures",
+        "Functional Programming",
+        "File I/O"
+      ],
+      "order": 4
+    },
+    {
+      "title": "Networking Basics",
+      "issuer": "Cisco",
+      "platform": "Cisco Networking Academy",
+      "issueDate": "2026-08-26",
+      "credentialId": "4b496569-0d5d-49e4-be15-d5a6feab9e48",
+      "verifyUrl": "https://www.netacad.com/certificates/4b496569-0d5d-49e4-be15-d5a6feab9e48",
+      "description": "Computer networking foundations: OSI and TCP/IP models, IP addressing and subnetting, routing and switching, and network security basics.",
+      "modules": [
+        "OSI & TCP/IP",
+        "IP Addressing",
+        "Routing & Switching",
+        "Network Security"
+      ],
+      "order": 5
+    },
+    {
+      "title": "Google AI Essentials",
+      "issuer": "Google",
+      "platform": "Coursera",
+      "issueDate": "2026-05-20",
+      "credentialId": "DL6WORWYKUR6",
+      "verifyUrl": "https://coursera.org/verify/specialization/DL6WORWYKUR6",
+      "description": "Five-course specialization on generative AI fundamentals, effective prompting, responsible AI use and boosting productivity with AI tools.",
+      "modules": [
+        "Introduction to AI",
+        "Prompting",
+        "Responsible AI",
+        "AI Productivity"
+      ],
+      "order": 6
+    },
+    {
+      "title": "Data Analytics Job Simulation",
+      "issuer": "Deloitte",
+      "platform": "Forage",
+      "issueDate": "2026-03-29",
+      "credentialId": "",
+      "verifyUrl": "https://drive.google.com/file/d/101aclxju0aURa327ZccXFLW8doXdL_Ew/view?usp=sharing",
+      "description": "Completed practical tasks in data analysis and forensic technology.",
+      "modules": [
+        "Data Analysis",
+        "Forensic Technology"
+      ],
+      "order": 7
+    }
+  ],
+  "projects": [
+    {
+      "title": "AI-Powered Finance Tracker",
+      "description": "Intelligent expense tracker with a React frontend and a Flask REST API for real-time transaction logging and categorisation.",
+      "highlights": [
+        "PyTorch + scikit-learn model analyses spending patterns and generates personalised budget recommendations with 85%+ prediction accuracy",
+        "Interactive Chart.js dashboards for monthly trends, category breakdowns and AI-generated savings insights"
+      ],
+      "techStack": [
+        "React",
+        "Python",
+        "Flask",
+        "PyTorch",
+        "Scikit-learn",
+        "Chart.js"
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1533750349088-75e1b6b6a45f?auto=format&fit=crop&w=800&h=480&q=70",
+      "imageAlt": "Illustrative finance dashboard artwork for the AI-Powered Finance Tracker project",
+      "githubLink": "https://github.com/advitiyaranjan/AI-Enabled-Expense-Track-Split",
+      "liveLink": "https://exptrack.advitiyaranjan.in/",
+      "order": 1
+    },
+    {
+      "title": "SyncAdda: Watch Together",
+      "description": "Account-free watch party app: create a private room, share a six-character code and watch, listen and video-call together in perfect sync.",
+      "highlights": [
+        "Server-authoritative play, pause, seek and speed with clock-offset estimation, drift correction and late-join sync over Socket.IO",
+        "Peer-to-peer local file streaming plus WebRTC voice/video, real-time chat, reactions and host controls for up to eight people"
+      ],
+      "techStack": [
+        "React",
+        "TypeScript",
+        "Node.js",
+        "Express",
+        "Socket.IO",
+        "WebRTC",
+        "Redis"
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1522869635100-9f4c5e86aa37?auto=format&fit=crop&w=800&h=480&q=70",
+      "imageAlt": "Illustrative media artwork for the SyncAdda watch-party project",
+      "githubLink": "https://github.com/advitiyaranjan/SyncAdda",
+      "liveLink": "https://adda.advitiyaranjan.in",
+      "order": 2
+    },
+    {
+      "title": "Student OS",
+      "description": "An offline-first, local-first academic planner and PWA. Upload your timetable once: it tracks attendance, schedules spaced-repetition revisions, plans your daily tasks, and syncs reliably across devices. AI Pilot (Gemini, server-routed) assists with workspace setup and natural-language app control under strict user-confirmation guardrails.",
+      "highlights": [
+        "Offline-first, local-first academic planner and PWA tracking attendance, daily tasks, and spaced-repetition revisions",
+        "AI Pilot powered by Gemini assists with workspace setup and natural-language app control under strict guardrails"
+      ],
+      "techStack": [
+        "React",
+        "TypeScript",
+        "PWA",
+        "Gemini AI"
+      ],
+      "imageUrl": null,
+      "imageAlt": null,
+      "githubLink": "https://github.com/advitiyaranjan/Attendence-and-routine-service",
+      "liveLink": "http://study.advitiyaranjan.in/",
+      "order": 3
+    },
+    {
+      "title": "ViswaKart: E-commerce Platform",
+      "description": "Full-stack e-commerce platform with Clerk authentication, a dynamic product catalogue, cart management and secure Stripe payments.",
+      "highlights": [
+        "RESTful Node.js/Express APIs for products, orders and users, backed by MongoDB with optimised query indexing",
+        "Frontend on Vercel and backend on Render, with sub-2s page loads and seamless cross-device responsiveness"
+      ],
+      "techStack": [
+        "React.js (Vite)",
+        "Node.js",
+        "Express",
+        "MongoDB",
+        "Clerk",
+        "Stripe"
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=800&h=480&q=70",
+      "imageAlt": "Illustrative online-shopping artwork for the ViswaKart e-commerce project",
+      "githubLink": "https://github.com/advitiyaranjan/ViswaKart",
+      "liveLink": "https://ecom.advitiyaranjan.in",
+      "order": 4
+    },
+    {
+      "title": "FilesBhejo: Peer-to-Peer File Sharing",
+      "description": "Send files between devices with a 6-digit code or a QR scan. No sign-up, and files never touch a server.",
+      "highlights": [
+        "Direct browser-to-browser transfers over WebRTC at 25–30 MB/s, with PeerJS used only for signalling",
+        "End-to-end encrypted with ECDH P-256 key agreement and AES-256-GCM, plus QR-link secrets and safety codes against interception"
+      ],
+      "techStack": [
+        "JavaScript",
+        "WebRTC",
+        "PeerJS",
+        "Web Crypto API",
+        "Vercel"
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=800&h=480&q=70",
+      "imageAlt": "Illustrative network artwork for the FilesBhejo peer-to-peer file-sharing project",
+      "githubLink": "",
+      "liveLink": "files.advitiyaranjan.in",
+      "order": 5
+    },
+    {
+      "title": "Personal Portfolio",
+      "description": "This site: a serverless React + TypeScript portfolio with a password-protected admin dashboard that manages every section without a separate database.",
+      "highlights": [
+        "Serverless API on Vercel with JSON/Blob storage and a JWT-secured admin dashboard",
+        "Futuristic UI with light and dark themes, responsive layouts and smooth transitions"
+      ],
+      "techStack": [
+        "React",
+        "TypeScript",
+        "Tailwind CSS",
+        "Vite",
+        "Vercel"
+      ],
+      "imageUrl": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&h=480&q=70",
+      "imageAlt": "Illustrative technology artwork for the portfolio website project",
+      "githubLink": "https://github.com/advitiyaranjan/my-portfolio",
+      "liveLink": "https://advitiyaranjan.in",
+      "order": 6
+    }
+  ],
+  "portfolio": {
+    "fullName": "Advitiya Ranjan",
+    "resumeLink": "/Advitiya_Ranjan_Resume.pdf",
+    "email": "advitiyaranjan1@gmail.com",
+    "bio": "I build scalable full-stack products with React, Node.js and TypeScript, and bring machine learning into them with PyTorch. Integrated B.Tech (IT) + MBA at IIITM Gwalior, GATE 2026 qualified and a Google Student Ambassador.",
+    "aboutDescription": "I'm pursuing an Integrated B.Tech (IT) + MBA at the Indian Institute of Information Technology and Management, Gwalior, where I work at the intersection of engineering and product thinking.\n\nI've shipped full-stack features as a Full Stack Developer Intern at Codec Technologies, analysed 50,000+ telemetry records in Deloitte's data analytics simulation, and now represent Google Gemini on campus as a Google Student Ambassador, running workshops for a 1,000+ strong student developer community.\n\nAlongside building, I qualified GATE 2026 in Computer Science (AIR 3460), have solved 500+ DSA problems, and hold certifications from Google, DeepLearning.AI, Meta and Cisco.",
+    "title": "Full Stack Developer & AI/ML Engineer",
+    "location": "IIITM Gwalior, Madhya Pradesh, India",
+    "education": {
+      "institution": "Indian Institute of Information Technology and Management, Gwalior",
+      "shortName": "IIITM Gwalior",
+      "degree": "Integrated B.Tech (IT) + M.B.A.",
+      "period": "2023 – 2028",
+      "cgpa": "7.96"
+    },
+    "aboutHighlights": [
+      {
+        "id": 1,
+        "icon": "Code",
+        "title": "Full Stack Engineering",
+        "description": "React, Next.js, Node.js, Express and TypeScript, from REST APIs and MongoDB schemas to deployed, responsive interfaces."
+      },
+      {
+        "id": 2,
+        "icon": "Lightbulb",
+        "title": "AI & Machine Learning",
+        "description": "PyTorch, TensorFlow and scikit-learn for deep learning, computer vision and practical ML features."
+      },
+      {
+        "id": 3,
+        "icon": "Users",
+        "title": "Community & Leadership",
+        "description": "Google Student Ambassador, Chairman of the IIITM Hindi Club and Social Media Head at Rotaract."
+      },
+      {
+        "id": 4,
+        "icon": "Target",
+        "title": "Problem Solver",
+        "description": "GATE 2026 AIR 3460 and 500+ DSA problems solved across LeetCode, Codeforces and GeeksforGeeks."
+      }
+    ],
+    "profileImage": "/images/profile-square.webp",
+    "heroHighlights": [
+      {
+        "value": "AIR 3460",
+        "label": "GATE 2026 · CS"
+      },
+      {
+        "value": "500+",
+        "label": "DSA problems"
+      },
+      {
+        "value": "1K+",
+        "label": "Students reached"
+      }
+    ],
+    "phone": "+91 9430",
+    "socialLinks": {
+      "github": "https://github.com/advitiyaranjan",
+      "linkedin": "https://www.linkedin.com/in/advitiya-ranjan",
+      "twitter": "https://x.com/advitiyaranjan",
+      "leetcode": "https://leetcode.com/advitiyaranjan",
+      "website": "https://advitiyaranjan.in",
+      "email_link": "mailto:ranjanadvitiya@gmail.com"
+    },
+    "stats": {
+      "projectsCompleted": 7,
+      "yearsExperience": 1,
+      "usersImpacted": 1,
+      "technologiesCount": 30
+    }
+  },
+  "experience": [
+    {
+      "title": "Student Ambassador",
+      "company": "Google",
+      "type": "Ambassador Program",
+      "location": "IIITM Gwalior · On campus",
+      "description": "Campus liaison between Google and the university, promoting Google Gemini and AI technologies to a student body of 1,000+.\nFacilitated 7 technical workshops and events, fostering a 1,000+ student developer community and increasing engagement with Google tools by an estimated 65%.",
+      "startDate": "2026-05-29",
+      "endDate": "2026-07-29",
+      "isCurrentRole": false,
+      "technologies": [
+        "Google Gemini",
+        "Generative AI",
+        "Technical Workshops",
+        "Community Building"
+      ],
+      "credentialUrl": "https://drive.google.com/file/d/1LNmxdqpx_Y6_zoEA7_6nLT1C6EzCv4Il/view",
+      "credentialLabel": "Offer letter",
+      "order": null
+    },
+    {
+      "title": "Full Stack Developer Intern",
+      "company": "Codec Technologies",
+      "type": "Internship",
+      "location": "Hybrid · India",
+      "description": "Engineered and deployed scalable web features using React.js, Node.js and TypeScript, delivering 3+ full-stack projects during a 12-week AICTE & ICAC approved program.\nOptimised backend API performance and frontend responsiveness for an estimated 20% reduction in load times, with consistently high ratings across 12 weekly performance reviews.",
+      "startDate": "2026-03-28",
+      "endDate": "2026-06-28",
+      "isCurrentRole": false,
+      "technologies": [
+        "React.js",
+        "Node.js",
+        "TypeScript",
+        "Express",
+        "REST APIs"
+      ],
+      "credentialUrl": "https://drive.google.com/file/d/1IDCgjo2RUq7ne6ZfQtr1fahTAC9Gj8y7/view?usp=sharing",
+      "credentialLabel": "Certificate",
+      "order": null
+    },
+    {
+      "title": "Data Analyst",
+      "company": "Deloitte",
+      "type": "Job Simulation · Forage",
+      "location": "Remote",
+      "description": "Analysed 50,000+ telemetry records across multiple industrial locations using SQL and Tableau to track and visualise machine downtime.\nDelivered actionable insights for client business problems, streamlining data reporting and identifying patterns that could reduce operational inefficiencies by 90%.",
+      "startDate": "2026-03-01",
+      "endDate": "2026-03-29",
+      "isCurrentRole": false,
+      "technologies": [
+        "SQL",
+        "Tableau",
+        "Data Analysis",
+        "Forensic Technology"
+      ],
+      "credentialUrl": "https://drive.google.com/file/d/101aclxju0aURa327ZccXFLW8doXdL_Ew/view?usp=sharing",
+      "credentialLabel": "Certificate",
+      "order": null
+    },
+    {
+      "title": "Blockchain & Governance Research",
+      "company": "Working Group on Technology for Viksit Bharat",
+      "type": "Research",
+      "location": "India · Remote",
+      "description": "Researched and prototyped blockchain-based governance systems to improve transparency, security and efficiency in public service delivery.\nDesigned use-cases for Decentralized Identity (DID) and smart contracts in citizen authentication, land records and subsidy automation.\nExplored AI-driven policy analytics, IoT-enabled infrastructure monitoring and integration with Digital Public Goods.",
+      "startDate": "2025-02-01",
+      "endDate": "2025-07-31",
+      "isCurrentRole": false,
+      "technologies": [
+        "Blockchain",
+        "Smart Contracts",
+        "Decentralized Identity (DID)",
+        "AI Policy Analytics",
+        "IoT"
+      ],
+      "credentialUrl": null,
+      "credentialLabel": null,
+      "order": null
+    }
+  ],
+  "skills": [
+    {
+      "category": "Languages",
+      "skills": [
+        {
+          "name": "C/C++"
+        },
+        {
+          "name": "Python"
+        },
+        {
+          "name": "JavaScript (ES6+)"
+        },
+        {
+          "name": "TypeScript"
+        },
+        {
+          "name": "SQL"
+        },
+        {
+          "name": "Solidity"
+        }
+      ],
+      "order": 1
+    },
+    {
+      "category": "Frameworks & Libraries",
+      "skills": [
+        {
+          "name": "React.js"
+        },
+        {
+          "name": "Next.js"
+        },
+        {
+          "name": "Node.js"
+        },
+        {
+          "name": "Express.js"
+        },
+        {
+          "name": "PyTorch"
+        },
+        {
+          "name": "TensorFlow"
+        },
+        {
+          "name": "Scikit-learn"
+        },
+        {
+          "name": "Web3.js"
+        },
+        {
+          "name": "Hardhat"
+        },
+        {
+          "name": "REST APIs"
+        }
+      ],
+      "order": 2
+    },
+    {
+      "category": "AI & ML",
+      "skills": [
+        {
+          "name": "Machine Learning"
+        },
+        {
+          "name": "Deep Learning"
+        },
+        {
+          "name": "Neural Networks"
+        },
+        {
+          "name": "Generative AI"
+        },
+        {
+          "name": "Prompt Engineering"
+        },
+        {
+          "name": "Computer Vision"
+        },
+        {
+          "name": "Vertex AI"
+        }
+      ],
+      "order": 3
+    },
+    {
+      "category": "Databases, Cloud & Tools",
+      "skills": [
+        {
+          "name": "MongoDB"
+        },
+        {
+          "name": "MySQL"
+        },
+        {
+          "name": "Firebase"
+        },
+        {
+          "name": "Supabase"
+        },
+        {
+          "name": "AWS"
+        },
+        {
+          "name": "Google Cloud"
+        },
+        {
+          "name": "Git"
+        },
+        {
+          "name": "GitHub"
+        },
+        {
+          "name": "Docker"
+        },
+        {
+          "name": "Jira"
+        },
+        {
+          "name": "Postman"
+        },
+        {
+          "name": "Linux"
+        }
+      ],
+      "order": 4
+    },
+    {
+      "category": "Core Fundamentals",
+      "skills": [
+        {
+          "name": "Data Structures & Algorithms"
+        },
+        {
+          "name": "OOP"
+        },
+        {
+          "name": "Operating Systems"
+        },
+        {
+          "name": "Computer Networks"
+        },
+        {
+          "name": "DBMS"
+        },
+        {
+          "name": "Computer Architecture"
+        },
+        {
+          "name": "System Design"
+        },
+        {
+          "name": "SDLC"
+        },
+        {
+          "name": "Agile & Scrum"
+        }
+      ],
+      "order": 5
+    }
+  ],
+  "achievements": [
+    {
+      "icon": "Award",
+      "title": "GATE 2026 Qualified",
+      "subtitle": "Computer Science & Information Technology",
+      "description": "Secured All India Rank 3460 among 211,020 candidates with a GATE score of 589 and 50.41 marks out of 100, showing strong command of algorithms, operating systems, networks and DBMS.",
+      "details": [
+        "AIR 3460",
+        "GATE Score 589",
+        "50.41 / 100 marks",
+        "211,020 candidates"
+      ],
+      "link": "https://drive.google.com/file/d/1hRbjxoTqNtuv89K-Rr839Qv8niUzSpeE/view?usp=drivesdk",
+      "order": 1
+    },
+    {
+      "icon": "Target",
+      "title": "National Youth Festival 2025 Finalist",
+      "subtitle": "Tech for Viksit Bharat",
+      "description": "Ranked among the top 1,000 of 30,00,000+ participants nationwide for an innovative, tech-driven solution to modernise public governance and citizen services.",
+      "details": [
+        "Top 1,000 nationally",
+        "30 lakh+ participants",
+        "Governance technology"
+      ],
+      "link": null,
+      "order": 2
+    },
+    {
+      "icon": "Users",
+      "title": "Chairman, IIITM Hindi Club",
+      "subtitle": "Cultural & Literary Leadership",
+      "description": "Led and organised 50+ cultural and literary events blending Hindi language promotion with modern digital platforms; managed a 20+ member core team and grew participation by over 60% year-on-year.",
+      "details": [
+        "50+ events",
+        "20+ member core team",
+        "+60% YoY participation"
+      ],
+      "link": null,
+      "order": 3
+    },
+    {
+      "icon": "Megaphone",
+      "title": "Social Media Head, Rotaract Club",
+      "subtitle": "IIITM Gwalior",
+      "description": "Designed and executed digital outreach campaigns, content strategy and brand identity for community service initiatives, tripling the club's social media following and boosting volunteer recruitment.",
+      "details": [
+        "3x social following",
+        "Content strategy",
+        "Brand identity"
+      ],
+      "link": null,
+      "order": 4
+    },
+    {
+      "icon": "Code",
+      "title": "Competitive Programming",
+      "subtitle": "500+ DSA Problems Solved",
+      "description": "Solved 500+ data structures and algorithms problems across LeetCode, Codeforces and GeeksforGeeks, covering dynamic programming, graphs, trees, sorting and greedy algorithms.",
+      "details": [
+        "LeetCode",
+        "Codeforces",
+        "GeeksforGeeks"
+      ],
+      "link": "https://leetcode.com/advitiyaranjan",
+      "order": 5
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 import { Braces, Layers, BrainCircuit, Database, Cpu, Server, LayoutTemplate, Wrench, Sparkles } from 'lucide-react';
-import { skillAPI } from '@/utils/api';
 import { useApiList } from './hooks/useApiList';
+import siteContent from '../../data/site-content.json';
 import { SectionHeading } from './SectionHeading';
 import { Reveal } from './Reveal';
 
@@ -31,7 +31,7 @@ const categoryIcon = (category: string) => {
 const LEVELS: Record<string, number> = { beginner: 1, intermediate: 2, advanced: 3, expert: 3 };
 
 export function Skills() {
-  const { items: categories, loading } = useApiList<SkillCategory>(skillAPI.getAllSkills);
+  const { items: categories, loading } = useApiList<SkillCategory>(siteContent.skills);
   const total = categories.reduce((sum, category) => sum + (category.skills?.length || 0), 0);
 
   return (

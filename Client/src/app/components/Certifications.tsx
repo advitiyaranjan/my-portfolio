@@ -1,6 +1,6 @@
 import { BadgeCheck, ArrowUpRight } from 'lucide-react';
-import { certificationAPI } from '@/utils/api';
 import { useApiList } from './hooks/useApiList';
+import siteContent from '../../data/site-content.json';
 import { SectionHeading } from './SectionHeading';
 import { Reveal } from './Reveal';
 import { externalUrl } from '../lib/url';
@@ -33,7 +33,7 @@ const monogram = (issuer: string) =>
     .join('');
 
 export function Certifications() {
-  const { items: certifications, loading } = useApiList<Certification>(certificationAPI.getAllCertifications);
+  const { items: certifications, loading } = useApiList<Certification>(siteContent.certifications);
 
   return (
     <section id="certifications" className="relative py-24 sm:py-28">

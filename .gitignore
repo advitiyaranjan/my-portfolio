@@ -22,6 +22,8 @@ build/
 # Data directory (JSON storage for serverless)
 .data/
 data/
+!Client/src/data/
+!Client/src/data/site-content.json
 /tmp/
 
 # IDE

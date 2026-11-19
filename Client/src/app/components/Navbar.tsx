@@ -42,10 +42,11 @@ export function ThemeToggle({ className = '' }: { className?: string }) {
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(hasAdminToken);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [activeSection, setActiveSection] = useState('home');
 
   useEffect(() => {
+    setIsAdmin(hasAdminToken());
     const onStorage = () => setIsAdmin(hasAdminToken());
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
@@ -93,7 +94,7 @@ export function Navbar() {
 
   return (
     <motion.header
-      initial={{ y: -80, opacity: 0 }}
+      initial={false}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
       className="fixed top-0 inset-x-0 z-50 px-3 sm:px-4 pt-3"

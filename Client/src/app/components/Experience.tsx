@@ -1,6 +1,6 @@
 import { Briefcase, CalendarDays, MapPin, ArrowUpRight } from 'lucide-react';
-import { experienceAPI } from '@/utils/api';
 import { useApiList } from './hooks/useApiList';
+import siteContent from '../../data/site-content.json';
 import { SectionHeading } from './SectionHeading';
 import { Reveal } from './Reveal';
 import { accentFor } from './Projects';
@@ -36,7 +36,7 @@ const formatPeriod = (exp: ExperienceItem) => {
 };
 
 export function Experience() {
-  const { items: experiences, loading } = useApiList<ExperienceItem>(experienceAPI.getAllExperience);
+  const { items: experiences, loading } = useApiList<ExperienceItem>(siteContent.experience);
 
   return (
     <section id="experience" className="relative py-24 sm:py-28">

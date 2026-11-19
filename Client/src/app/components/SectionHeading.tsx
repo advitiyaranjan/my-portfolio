@@ -12,7 +12,7 @@ interface SectionHeadingProps {
 export function SectionHeading({ index, eyebrow, title, highlight, subtitle }: SectionHeadingProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 24 }}
+      initial={false}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.6 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
