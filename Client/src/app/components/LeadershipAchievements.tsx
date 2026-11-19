@@ -52,13 +52,13 @@ export function LeadershipAchievements() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {achievements.map((achievement, index) => {
               const Icon = iconMap[achievement.icon] || Award;
-              const [from, to] = accentFor(achievement.gradient);
+              const [from] = accentFor(achievement.gradient);
               const content = (
                 <>
                   <div className="flex items-start gap-4">
                     <span
                       className="shrink-0 grid place-items-center w-12 h-12 rounded-2xl text-white"
-                      style={{ backgroundImage: `linear-gradient(135deg, ${from}, ${to})`, boxShadow: `0 10px 24px -12px ${from}` }}
+                      style={{ backgroundColor: from }}
                     >
                       <Icon className="w-6 h-6" />
                     </span>

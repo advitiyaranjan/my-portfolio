@@ -136,7 +136,7 @@ export function Hero() {
             <div className="relative w-64 sm:w-80 lg:w-[22rem] aspect-square">
               <div className="absolute inset-8 rounded-full blur-3xl opacity-80" style={{ background: 'var(--glow)' }} />
               <div className="absolute -inset-5 rounded-full border border-dashed border-border-strong" />
-              <div className="absolute inset-0 rounded-full holo-ring" />
+              <div className="absolute inset-0 rounded-full border-2 border-primary" />
               <div className="absolute inset-[3px] rounded-full bg-background" />
               <img
                 src={portfolio.profileImage}

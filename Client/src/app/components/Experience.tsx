@@ -63,18 +63,18 @@ export function Experience() {
             <span
               aria-hidden="true"
               className="absolute left-[19px] sm:left-[23px] top-2 bottom-2 w-px"
-              style={{ backgroundImage: 'linear-gradient(to bottom, var(--neon-cyan), var(--neon-violet), transparent)' }}
+              style={{ backgroundColor: 'var(--border-strong)' }}
             />
 
             {experiences.map((exp, index) => {
-              const [from, to] = accentFor(exp.gradient);
+              const [from] = accentFor(exp.gradient);
               const points = (exp.description || '').split('\n').map((p) => p.trim()).filter(Boolean);
 
               return (
                 <li key={exp._id || `${exp.company}-${exp.title}`} className="relative pl-14 sm:pl-20 pb-8 last:pb-0">
                   <span
                     className="absolute left-0 top-5 grid place-items-center w-10 h-10 sm:w-12 sm:h-12 rounded-2xl text-white shadow-lg"
-                    style={{ backgroundImage: `linear-gradient(135deg, ${from}, ${to})`, boxShadow: `0 8px 24px -8px ${from}` }}
+                    style={{ backgroundColor: from }}
                   >
                     <Briefcase className="w-5 h-5" />
                   </span>
@@ -95,7 +95,7 @@ export function Experience() {
                         <div>
                           <h3 className="font-display text-xl sm:text-2xl font-semibold tracking-tight text-foreground">{exp.title}</h3>
                           <p className="mt-1.5 flex items-center gap-2 font-medium text-foreground/80">
-                            <span className="w-4 h-[2px] rounded-full" style={{ backgroundImage: `linear-gradient(90deg, ${from}, ${to})` }} />
+                            <span className="w-4 h-[2px] rounded-full bg-primary" />
                             {exp.company}
                           </p>
                         </div>

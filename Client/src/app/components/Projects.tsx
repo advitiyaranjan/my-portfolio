@@ -28,7 +28,7 @@ export const ACCENTS: Record<string, [string, string]> = {
   'from-teal-500 to-blue-500': ['#14b8a6', '#3b82f6'],
 };
 
-export const accentFor = (gradient?: string) => ACCENTS[gradient || ''] || ['#22d3ee', '#8b5cf6'];
+export const accentFor = (_gradient?: string) => ['#155eef', '#155eef'];
 
 // Placeholder links from older data should not render as real buttons.
 const isRealLink = (url?: string) => Boolean(url && !url.includes('example.com') && url !== '#');
@@ -58,7 +58,7 @@ export function Projects() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {projects.map((project, index) => {
-              const [from, to] = accentFor(project.gradient);
+              const [from] = accentFor(project.gradient);
               const live = isRealLink(project.liveLink) ? externalUrl(project.liveLink) : undefined;
               const github = isRealLink(project.githubLink) ? externalUrl(project.githubLink) : undefined;
               const tech = project.techStack || [];
@@ -66,11 +66,7 @@ export function Projects() {
               return (
                 <Reveal key={project._id || project.title} delay={(index % 2) * 0.08} className="h-full">
                   <article className="panel panel-interactive group h-full flex flex-col overflow-hidden">
-                    <div className="h-[3px] w-full" style={{ backgroundImage: `linear-gradient(90deg, ${from}, ${to})` }} />
-                    <div
-                      className="pointer-events-none absolute -top-24 -right-24 w-56 h-56 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                      style={{ background: `radial-gradient(circle, ${from}33, transparent 65%)` }}
-                    />
+                    <div className="h-[3px] w-full bg-primary" />
 
                     <div className="relative flex flex-col flex-1 p-6 sm:p-7">
                       <div className="flex items-start justify-between gap-4">
@@ -97,7 +93,7 @@ export function Projects() {
                             <li key={point} className="flex gap-2.5 text-sm leading-relaxed text-muted-foreground">
                               <span
                                 className="mt-2 w-1.5 h-1.5 shrink-0 rounded-full"
-                                style={{ backgroundImage: `linear-gradient(135deg, ${from}, ${to})` }}
+                                style={{ backgroundColor: from }}
                               />
                               <span>{point}</span>
                             </li>

@@ -147,7 +147,7 @@ export function Navbar() {
                       className="absolute inset-0 rounded-lg bg-surface-2 border border-border"
                       transition={{ type: 'spring', stiffness: 420, damping: 34 }}
                     >
-                      <span className="absolute left-1/2 -translate-x-1/2 -bottom-px h-px w-6 bg-gradient-to-r from-neon-cyan to-neon-violet" />
+                      <span className="absolute left-1/2 -translate-x-1/2 -bottom-px h-px w-6 bg-primary" />
                     </motion.span>
                   )}
                 </li>

@@ -20,7 +20,7 @@ export function SectionHeading({ index, eyebrow, title, highlight, subtitle }: S
     >
       <div className="flex items-center gap-3 mb-4">
         <span className="hud-label">{index}</span>
-        <span className="h-px w-10 bg-gradient-to-r from-neon-cyan to-transparent" />
+        <span className="h-px w-10 bg-primary" />
         <span className="hud-label text-muted-foreground">{eyebrow}</span>
       </div>
       <h2 className="font-display text-4xl sm:text-5xl font-bold tracking-tight text-foreground">

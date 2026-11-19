@@ -81,8 +81,8 @@ export default function Login() {
           transition={{ duration: 0.45, ease: 'easeOut' }}
           className="w-full max-w-[420px]"
         >
-          <div className="relative rounded-3xl p-px" style={{ backgroundImage: 'linear-gradient(140deg, var(--neon-cyan), transparent 40%, transparent 60%, var(--neon-violet))' }}>
-            <div className="rounded-[calc(1.5rem-1px)] bg-surface p-7 sm:p-9 shadow-[0_30px_80px_-40px_var(--glow)]">
+          <div className="relative rounded-3xl border border-border-strong bg-surface shadow-[0_30px_80px_-40px_var(--glow)]">
+            <div className="rounded-3xl bg-surface p-7 sm:p-9">
               <div className="flex items-center gap-3">
                 <span className="grid place-items-center w-12 h-12 rounded-2xl neon-border">
                   <ShieldCheck className="w-6 h-6 text-neon-cyan" />
