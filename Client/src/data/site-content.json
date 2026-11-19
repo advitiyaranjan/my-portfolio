@@ -126,8 +126,8 @@
         "Scikit-learn",
         "Chart.js"
       ],
-      "imageUrl": "https://images.unsplash.com/photo-1533750349088-75e1b6b6a45f?auto=format&fit=crop&w=800&h=480&q=70",
-      "imageAlt": "Illustrative finance dashboard artwork for the AI-Powered Finance Tracker project",
+      "imageUrl": "/images/finance-tracker-preview.svg",
+      "imageAlt": "FinanceAI expense tracker dashboard with spending charts and recent transactions",
       "githubLink": "https://github.com/advitiyaranjan/AI-Enabled-Expense-Track-Split",
       "liveLink": "https://exptrack.advitiyaranjan.in/",
       "order": 1
@@ -167,8 +167,8 @@
         "PWA",
         "Gemini AI"
       ],
-      "imageUrl": null,
-      "imageAlt": null,
+      "imageUrl": "/images/student-os-preview.svg",
+      "imageAlt": "Student OS academic planner dashboard with attendance, revision queue and class schedule",
       "githubLink": "https://github.com/advitiyaranjan/Attendence-and-routine-service",
       "liveLink": "http://study.advitiyaranjan.in/",
       "order": 3

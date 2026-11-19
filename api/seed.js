@@ -219,7 +219,7 @@ const projects = [
       'Interactive Chart.js dashboards for monthly trends, category breakdowns and AI-generated savings insights',
     ],
     techStack: ['React', 'Python', 'Flask', 'PyTorch', 'Scikit-learn', 'Chart.js'],
-    imageUrl: 'https://images.unsplash.com/photo-1533750349088-75e1b6b6a45f?w=500&h=300&fit=crop',
+    imageUrl: '/images/finance-tracker-preview.svg',
     githubLink: 'https://github.com/advitiyaranjan/ai-finance-tracker',
     liveLink: '',
     gradient: 'from-yellow-500 to-orange-500',
